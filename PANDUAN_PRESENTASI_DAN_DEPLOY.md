@@ -33,11 +33,30 @@ Aplikasi ini sudah berhasil di-build (*compiled*) ke folder `dist` siap saji. An
 
 ---
 
-## Solusi 3: Deploy via Vercel (Otomatis & Profesional)
-1. Buka **[https://vercel.com](https://vercel.com)** (login dengan akun Google / GitHub).
-2. Pilih **"Add New Project"**.
-3. Hubungkan folder proyek ini atau upload kode sumbernya.
-4. Klik **Deploy**. Web Anda akan langsung memiliki domain publik seperti `https://isi-kulkas.vercel.app`.
+## Solusi 3: Deploy via Vercel (100% Gratis, Tanpa Kartu Kredit / Bank)
+
+Vercel adalah pilihan terbaik karena:
+- **Tidak meminta kartu kredit/rekening bank sama sekali** (cukup login dengan akun GitHub).
+- Proyek ini **sudah dilengkapi file `vercel.json` dan folder `api/` (Serverless Function)**, sehingga backend Node.js dan respon Gemini AI akan berjalan 100% aktif (tidak akan diam/statis seperti di Netlify).
+
+### Langkah Deploy ke Vercel:
+1. **Push atau Upload Proyek ke GitHub**:
+   - Buat repositori baru di GitHub (misal: `isi-kulkas-ai`).
+   - Unggah seluruh file proyek ini ke repositori tersebut.
+2. **Buka Vercel**:
+   - Kunjungi **[https://vercel.com](https://vercel.com)** lalu klik **Sign Up / Log In** menggunakan akun **GitHub** Anda.
+3. **Impor Proyek**:
+   - Di dashboard Vercel, klik tombol **"Add New..."** -> pilih **"Project"**.
+   - Pilih repositori GitHub Anda tadi, lalu klik **"Import"**.
+4. **Pasang Kunci Gemini API (Sangat Penting)**:
+   - Sebelum klik tombol deploy, buka bagian dropdown **"Environment Variables"**.
+   - Masukkan:
+     - **Key**: `GEMINI_API_KEY`
+     - **Value**: *(Salin API Key Gemini Anda dari Google AI Studio)*
+   - Klik **Add**.
+5. **Klik "Deploy"**:
+   - Tunggu sekitar 1 menit hingga proses build selesai.
+   - Vercel akan memberikan link domain publik permanen (misal: `https://isi-kulkas.vercel.app`) yang siap diakses 24 jam dengan respon Gemini AI aktif sepenuhnya!
 
 ---
 
