@@ -11,6 +11,7 @@ import { AuthModal } from './components/AuthModal';
 import { AuthDashboard } from './components/AuthDashboard';
 import { AccountMenuModal } from './components/AccountMenuModal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
+import { LogoutConfirmModal } from './components/LogoutConfirmModal';
 import { SearchModeSelector, SearchMode } from './components/SearchModeSelector';
 import { INITIAL_INGREDIENTS } from './data/initialIngredients';
 import { RECIPES_DATABASE } from './data/recipes';
@@ -262,6 +263,9 @@ export default function App() {
   // Change Password Modal state
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState<boolean>(false);
 
+  // Logout confirmation modal state
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState<boolean>(false);
+
   // Toast feedback state
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -317,7 +321,7 @@ export default function App() {
       map[ing.id] = true;
     });
     setSelectedFridgeIds(map);
-    showToast('Contoh bahan demo berhasil dimasukkan ke kulkas!');
+    showToast('Contoh bahan berhasil ditambahkan ke kulkas!');
   };
 
   const handleLogout = (targetMode: 'login' | 'register' | 'switch' = 'login') => {
@@ -764,8 +768,7 @@ export default function App() {
     i => i.urgency === 'urgent' || (i.daysRemaining && i.daysRemaining <= 2)
   );
 
-  // Jika pengguna belum login, tampilkan Dashboard Mandiri Login & Registrasi
-  // (Terpisah secara penuh antara portal login dan tampilan aplikasi Isi Kulkasku)
+  // Jika pengguna belum login, tampilkan portal login & registrasi
   if (!currentUser) {
     return (
       <AuthDashboard
@@ -817,7 +820,7 @@ export default function App() {
             setIsAuthModalOpen(true);
           }
         }}
-        onLogout={handleLogout}
+        onLogout={() => setIsLogoutConfirmOpen(true)}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 space-y-10 md:space-y-14">
@@ -1581,7 +1584,10 @@ export default function App() {
             showToast('Data kulkas berhasil dipulihkan dari cadangan!');
           }
         }}
-        onLogout={handleLogout}
+        onLogout={() => {
+          setIsAccountMenuOpen(false);
+          setIsLogoutConfirmOpen(true);
+        }}
         ingredientCount={ingredients.length}
         favoriteCount={favoriteRecipes.length}
         shoppingCount={shoppingItems.length}
@@ -1596,6 +1602,17 @@ export default function App() {
           onSuccess={(msg) => showToast(msg)}
         />
       )}
+
+      {/* Konfirmasi Keluar Akun Modal */}
+      <LogoutConfirmModal
+        isOpen={isLogoutConfirmOpen}
+        onClose={() => setIsLogoutConfirmOpen(false)}
+        onConfirm={() => {
+          setIsLogoutConfirmOpen(false);
+          handleLogout('login');
+        }}
+        userName={currentUser?.name}
+      />
 
       {/* Footer */}
       <footer className="mt-12 border-t border-stone-200 bg-white py-8">

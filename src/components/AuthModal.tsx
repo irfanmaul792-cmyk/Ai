@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User as UserIcon, LogIn, UserPlus, Users, X, Shield, CheckCircle2, AlertCircle, Trash2, Eye, EyeOff } from 'lucide-react';
 import { db } from '../services/db';
 import { User } from '../types';
+import { DeleteAccountModal } from './DeleteAccountModal';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [userListVersion, setUserListVersion] = useState(0);
+  const [accountToDelete, setAccountToDelete] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -54,15 +56,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleDeleteAccount = (userId: string, userName: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm(`Hapus akun "${userName}" beserta seluruh data kulkasnya dari perangkat ini?`)) {
-      db.deleteUser(userId);
-      setUserListVersion(v => v + 1);
-      setError(null);
-      setSuccess(`Akun "${userName}" berhasil dihapus.`);
-      if (currentUser?.id === userId) {
-        db.logout();
-        window.location.reload();
-      }
+    setAccountToDelete({ id: userId, name: userName });
+  };
+
+  const confirmDeleteAccountAction = () => {
+    if (!accountToDelete) return;
+    const { id, name: targetName } = accountToDelete;
+    db.deleteUser(id);
+    setUserListVersion(v => v + 1);
+    setAccountToDelete(null);
+    setError(null);
+    setSuccess(`Akun "${targetName}" berhasil dihapus.`);
+    if (currentUser?.id === id) {
+      db.logout();
+      window.location.reload();
     }
   };
 
@@ -119,8 +126,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setError('Kata sandi harus dibuat agar akun Anda aman dan bisa login di HP lain.');
       return;
     }
-    if (trimmedPassword.length < 4) {
-      setError('Kata sandi minimal 4 karakter atau angka PIN.');
+    if (trimmedPassword.length < 8) {
+      setError('Kata sandi minimal 8 karakter (bisa berupa huruf, angka, atau simbol).');
       return;
     }
 
@@ -141,11 +148,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setLoading(false);
 
     if (res.success && res.user) {
-      setSuccess(`Akun "${res.user.name}" berhasil dibuat dengan kulkas bersih & kosong!`);
+      setSuccess(`Akun "${res.user.name}" berhasil dibuat!`);
       setTimeout(() => {
         onUserChanged(res.user!);
         onClose();
-      }, 800);
+      }, 700);
     } else {
       setError(res.error || `Email atau ID "${trimmedEmail}" sudah digunakan. Silakan gunakan email atau ID lain.`);
     }
@@ -184,15 +191,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
             <Shield className="w-3.5 h-3.5" />
-            <span>Database Akun Mandiri</span>
+            <span>Akun & Keamanan</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold font-display text-white mt-1">
-            {mode === 'switch' && 'Pilih / Ganti Akun Kulkas'}
-            {mode === 'login' && 'Masuk ke Kulkas Anda'}
-            {mode === 'register' && 'Daftar Akun Kulkas Baru'}
+            {mode === 'switch' && 'Pilih / Ganti Akun'}
+            {mode === 'login' && 'Masuk ke Akun Anda'}
+            {mode === 'register' && 'Daftar Akun Baru'}
           </h2>
           <p className="text-xs text-stone-400 mt-1">
-            Setiap akun memiliki kulkas dan catatan menu tersendiri di perangkat Anda.
+            Kelola stok bahan makanan, resep favorit, dan menu masakan Anda.
           </p>
 
           {/* Mode Selector Tabs */}
@@ -341,7 +348,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1.5 cursor-pointer"
               >
                 <UserPlus className="w-3.5 h-3.5" />
-                <span>+ Buat Akun Baru (Kulkas Bersih)</span>
+                <span>+ Buat Akun Baru</span>
               </button>
               <button
                 type="button"
@@ -357,10 +364,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Tab 2: Register New User */}
         {mode === 'register' && (
           <form onSubmit={handleRegister} className="space-y-4">
-            <div className="p-3 bg-emerald-950/30 border border-emerald-800/40 rounded-2xl text-xs text-emerald-300">
-              ✨ <strong>Sesuai Permintaan Anda:</strong> Akun baru akan dibuat dengan <strong>kulkas 100% kosong</strong> sehingga Anda bisa mengisi bahan dapur Anda sendiri tanpa tercampur bahan contoh.
-            </div>
-
             <div>
               <label className="block text-xs font-medium text-stone-300 mb-1.5">
                 Pilih Avatar Akun
@@ -420,10 +423,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Minimal 4 karakter"
+                  placeholder="Minimal 8 karakter (huruf, angka, atau simbol)"
                   className="w-full px-4 py-2.5 pr-11 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500 font-mono tracking-wider"
                   required
-                  minLength={4}
+                  minLength={8}
                 />
                 <button
                   type="button"
@@ -434,9 +437,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-[11px] text-stone-400 mt-1">
-                🔒 Dibuat untuk keamanan akun dan login di perangkat lain.
-              </p>
+              <div className="flex items-center justify-between mt-1 text-[11px]">
+                <span className={password.length >= 8 ? 'text-emerald-400 font-medium' : 'text-stone-400'}>
+                  🔒 Minimal 8 karakter (huruf, angka, atau simbol)
+                </span>
+                {password.length > 0 && (
+                  <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded ${password.length >= 8 ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-stone-800 text-amber-300'}`}>
+                    {password.length}/8
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Tombol Selesai Daftar Akun */}
@@ -531,6 +541,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteAccountModal
+        isOpen={accountToDelete !== null}
+        onClose={() => setAccountToDelete(null)}
+        onConfirm={confirmDeleteAccountAction}
+        accountName={accountToDelete?.name || ''}
+      />
     </div>
   );
 };

@@ -185,10 +185,10 @@ class DatabaseService {
       const trimmedName = name.trim();
       const trimmedPassword = password.trim();
 
-      if (!trimmedPassword || trimmedPassword.length < 4) {
+      if (!trimmedPassword || trimmedPassword.length < 8) {
         return { 
           success: false, 
-          error: 'Kata sandi harus dibuat (minimal 4 karakter) agar akun Anda aman dan bisa login di perangkat lain.' 
+          error: 'Kata sandi minimal 8 karakter (bisa berupa huruf, angka, atau simbol) agar akun Anda aman dan dapat login di perangkat lain.' 
         };
       }
 
@@ -359,6 +359,10 @@ class DatabaseService {
     newPassword: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
+      if (!newPassword || newPassword.trim().length < 8) {
+        return { success: false, error: 'Kata sandi baru minimal 8 karakter (bisa berupa huruf, angka, atau simbol).' };
+      }
+
       // 1. Try updating on central server
       try {
         const resp = await fetch('/api/auth/change-password', {
@@ -397,6 +401,13 @@ class DatabaseService {
    */
   public deleteUser(userId: string): boolean {
     try {
+      // Fire-and-forget server sync to clean up centralized records and free up email
+      fetch('/api/auth/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      }).catch(err => console.warn('Could not sync user deletion to server:', err));
+
       let users = this.getUsers();
       users = users.filter(u => u.id !== userId);
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));

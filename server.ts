@@ -85,12 +85,12 @@ app.post('/api/auth/register', (req, res) => {
   try {
     const { name, email, password, avatar } = req.body;
     if (!name || !email) {
-      return res.status(400).json({ error: 'Nama dan email wajib diisi.' });
+      return res.status(400).json({ error: 'Nama dan email harus diisi.' });
     }
 
-    if (!password || password.trim().length < 4) {
+    if (!password || password.trim().length < 8) {
       return res.status(400).json({ 
-        error: 'Kata sandi wajib dibuat (minimal 4 karakter) agar akun Anda aman dan bisa login di perangkat lain.' 
+        error: 'Kata sandi minimal 8 karakter (bisa berupa huruf, angka, atau simbol) agar akun Anda aman dan bisa login di perangkat lain.' 
       });
     }
 
@@ -150,11 +150,11 @@ app.post('/api/auth/login', (req, res) => {
   try {
     const { emailOrName, password } = req.body;
     if (!emailOrName) {
-      return res.status(400).json({ error: 'Email atau username akun wajib diisi.' });
+      return res.status(400).json({ error: 'Email atau username akun harus diisi.' });
     }
 
     if (!password || !password.trim()) {
-      return res.status(400).json({ error: 'Kata sandi wajib diisi untuk masuk ke akun Anda.' });
+      return res.status(400).json({ error: 'Kata sandi harus diisi untuk masuk ke akun Anda.' });
     }
 
     const db = initCentralDb();
@@ -205,7 +205,10 @@ app.post('/api/auth/change-password', (req, res) => {
   try {
     const { userId, oldPassword, newPassword } = req.body;
     if (!userId || !newPassword) {
-      return res.status(400).json({ error: 'User ID dan kata sandi baru wajib disertakan.' });
+      return res.status(400).json({ error: 'User ID dan kata sandi baru harus disertakan.' });
+    }
+    if (newPassword.trim().length < 8) {
+      return res.status(400).json({ error: 'Kata sandi baru minimal 8 karakter (bisa berupa kombinasi huruf, angka, atau simbol).' });
     }
     const db = initCentralDb();
     const user = db.users.find(u => u.id === userId);
@@ -250,6 +253,21 @@ app.post('/api/user-data/:userId', (req, res) => {
     updatedAt: Date.now()
   };
   saveCentralDb(db);
+  res.json({ success: true });
+});
+
+app.post('/api/auth/delete-user', (req, res) => {
+  const { userId } = req.body;
+  if (!userId) {
+    return res.status(400).json({ error: 'User ID diperlukan' });
+  }
+
+  const db = initCentralDb();
+  db.users = db.users.filter(u => u.id !== userId);
+  delete db.passwords[userId];
+  delete db.userData[userId];
+  saveCentralDb(db);
+
   res.json({ success: true });
 });
 

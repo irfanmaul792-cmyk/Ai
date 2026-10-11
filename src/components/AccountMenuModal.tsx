@@ -100,8 +100,8 @@ export const AccountMenuModal: React.FC<AccountMenuModalProps> = ({
               </div>
               <p className="text-xs text-stone-400">{currentUser.email}</p>
               <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-emerald-400 font-medium">
-                <Database className="w-3 h-3" />
-                <span>Database Kulkas Aktif</span>
+                <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                <span>Akun Aktif</span>
               </div>
             </div>
           </div>
@@ -158,7 +158,7 @@ export const AccountMenuModal: React.FC<AccountMenuModalProps> = ({
                 <Users className="w-4 h-4 text-emerald-400" />
                 <div>
                   <span className="font-semibold block text-stone-100">Ganti Akun / Masuk Akun Lain</span>
-                  <span className="text-[11px] text-stone-300">Beralih ke kulkas akun yang berbeda</span>
+                  <span className="text-[11px] text-stone-300">Beralih ke profil akun yang berbeda</span>
                 </div>
               </div>
               <span className="text-stone-300 text-xs font-semibold">Pilih &rarr;</span>
@@ -177,7 +177,7 @@ export const AccountMenuModal: React.FC<AccountMenuModalProps> = ({
                 <KeyRound className="w-4 h-4 text-amber-400" />
                 <div>
                   <span className="font-semibold block text-stone-100">Ubah Kata Sandi / PIN</span>
-                  <span className="text-[11px] text-stone-300">Ganti kata sandi akun untuk akses di HP lain</span>
+                  <span className="text-[11px] text-stone-300">Perbarui kata sandi untuk keamanan akun Anda</span>
                 </div>
               </div>
               <span className="text-stone-300 text-xs font-semibold">Ubah &rarr;</span>
@@ -194,7 +194,7 @@ export const AccountMenuModal: React.FC<AccountMenuModalProps> = ({
                   <Trash2 className="w-4 h-4 text-rose-400" />
                   <div>
                     <span className="font-semibold block text-rose-300">Kosongkan Semua Isi Kulkas</span>
-                    <span className="text-[11px] text-stone-300">Hapus semua bahan di akun ini agar bersih</span>
+                    <span className="text-[11px] text-stone-300">Hapus seluruh daftar bahan makanan saat ini</span>
                   </div>
                 </div>
                 <span className="text-stone-300 text-xs">Hapus</span>

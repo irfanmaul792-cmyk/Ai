@@ -38,8 +38,8 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       return;
     }
 
-    if (newPassword.length < 4) {
-      setError('Kata sandi baru minimal 4 karakter agar aman.');
+    if (newPassword.length < 8) {
+      setError('Kata sandi baru minimal 8 karakter (bisa berupa kombinasi huruf, angka, atau simbol).');
       return;
     }
 
@@ -132,16 +132,17 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           {/* 2. Kata Sandi Baru */}
           <div>
             <label className="block text-xs font-semibold text-stone-300 mb-1.5">
-              Kata Sandi Baru <span className="text-emerald-400">*</span>
+              Kata Sandi Baru <span className="text-rose-400 font-bold">*</span>
             </label>
             <div className="relative">
               <input
                 type={showNewPassword ? 'text' : 'password'}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Minimal 4 karakter atau angka PIN"
+                placeholder="Minimal 8 karakter (huruf, angka, atau simbol)"
                 className="w-full px-4 py-3 pr-11 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500 placeholder-stone-600 font-mono tracking-wider"
                 required
+                minLength={8}
               />
               <button
                 type="button"
@@ -152,12 +153,22 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                 {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            <div className="flex items-center justify-between mt-1.5 text-[11px]">
+              <span className={newPassword.length >= 8 ? 'text-emerald-400 font-medium' : 'text-stone-400'}>
+                🔒 Minimal 8 karakter (dapat berupa huruf, angka, atau simbol)
+              </span>
+              {newPassword.length > 0 && (
+                <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded ${newPassword.length >= 8 ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-stone-800 text-amber-300'}`}>
+                  {newPassword.length}/8
+                </span>
+              )}
+            </div>
           </div>
 
           {/* 3. Konfirmasi Kata Sandi Baru */}
           <div>
             <label className="block text-xs font-semibold text-stone-300 mb-1.5">
-              Konfirmasi Kata Sandi Baru <span className="text-emerald-400">*</span>
+              Konfirmasi Kata Sandi Baru <span className="text-rose-400 font-bold">*</span>
             </label>
             <div className="relative">
               <input
@@ -167,6 +178,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                 placeholder="Ulangi kata sandi baru"
                 className="w-full px-4 py-3 pr-11 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500 placeholder-stone-600 font-mono tracking-wider"
                 required
+                minLength={8}
               />
               <button
                 type="button"
