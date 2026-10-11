@@ -7,12 +7,15 @@ import { RecipeCard } from './components/RecipeCard';
 import { CookingModeModal } from './components/CookingModeModal';
 import { ShoppingListModal } from './components/ShoppingListModal';
 import { ShareRecipeModal } from './components/ShareRecipeModal';
+import { AuthModal } from './components/AuthModal';
+import { AccountMenuModal } from './components/AccountMenuModal';
 import { SearchModeSelector, SearchMode } from './components/SearchModeSelector';
 import { INITIAL_INGREDIENTS } from './data/initialIngredients';
 import { RECIPES_DATABASE } from './data/recipes';
 import { generateDynamicRecipes } from './utils/recipeGenerator';
 import { resolveIngredientIcon } from './utils/ingredientVisuals';
-import { Ingredient, UploadedPhoto, Recipe, FilterOptions, ShoppingItem } from './types';
+import { Ingredient, UploadedPhoto, Recipe, FilterOptions, ShoppingItem, User } from './types';
+import { db } from './services/db';
 import {
   Search,
   Sparkles,
@@ -49,16 +52,29 @@ export default function App() {
   // Check Gemini API status
   const [geminiConnected, setGeminiConnected] = useState<boolean | null>(null);
 
-  // Ingredients in Kulkas Pintar (The core inventory)
-  const [ingredients, setIngredients] = useState<Ingredient[]>(INITIAL_INGREDIENTS);
+  // User Authentication & Multi-Account Database State
+  const [currentUser, setCurrentUser] = useState<User | null>(() => db.getCurrentUser());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState<boolean>(false);
+
+  // Ingredients in Kulkas Pintar (Isolated per user account - starts clean/empty for new user!)
+  const [ingredients, setIngredients] = useState<Ingredient[]>(() => {
+    const user = db.getCurrentUser();
+    if (user) {
+      const data = db.getUserData(user.id);
+      return data.ingredients || [];
+    }
+    return [];
+  });
 
   // Selected ingredients from Kulkas Pintar for recipe search
   const [selectedFridgeIds, setSelectedFridgeIds] = useState<Record<string, boolean>>(() => {
-    const initialMap: Record<string, boolean> = {};
-    INITIAL_INGREDIENTS.forEach(ing => {
-      initialMap[ing.id] = true;
-    });
-    return initialMap;
+    const user = db.getCurrentUser();
+    if (user) {
+      const data = db.getUserData(user.id);
+      return data.selectedFridgeIds || {};
+    }
+    return {};
   });
 
   // Search mode state: 3 Options
@@ -68,7 +84,10 @@ export default function App() {
   const [searchMode, setSearchMode] = useState<SearchMode>('fridge_only');
 
   // Photo state (Starts empty)
-  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
+  const [photos, setPhotos] = useState<UploadedPhoto[]>(() => {
+    const user = db.getCurrentUser();
+    return user ? db.getUserData(user.id).photos || [] : [];
+  });
 
   // AI Vision states
   const [isAnalyzingPhotos, setIsAnalyzingPhotos] = useState<boolean>(false);
@@ -83,11 +102,19 @@ export default function App() {
   const [hasSearched, setHasSearched] = useState<boolean>(false);
 
   // Preference filters
-  const [filters, setFilters] = useState<FilterOptions>({
-    budget: 'Bebas',
-    cookingTime: 'Maks. 30 menit',
-    servings: '2',
-    preferences: 'suka pedas'
+  const [filters, setFilters] = useState<FilterOptions>(() => {
+    const user = db.getCurrentUser();
+    return user ? db.getUserData(user.id).filters || {
+      budget: 'Bebas',
+      cookingTime: 'Maks. 30 menit',
+      servings: '2',
+      preferences: 'suka pedas'
+    } : {
+      budget: 'Bebas',
+      cookingTime: 'Maks. 30 menit',
+      servings: '2',
+      preferences: 'suka pedas'
+    };
   });
 
   // UI state
@@ -95,25 +122,17 @@ export default function App() {
   const [selectedTagFilter, setSelectedTagFilter] = useState<string>('all');
   const [, startTransition] = useTransition();
 
-  // Opsi 1: Shopping list state with localStorage persistence
+  // Opsi 1: Shopping list state with user database persistence
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('kulkas_shopping_items');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+    const user = db.getCurrentUser();
+    return user ? db.getUserData(user.id).shoppingItems || [] : [];
   });
   const [isShoppingModalOpen, setIsShoppingModalOpen] = useState<boolean>(false);
 
-  // Opsi 3: Favorite recipes state with localStorage persistence
+  // Opsi 3: Favorite recipes state with user database persistence
   const [favoriteRecipes, setFavoriteRecipes] = useState<Recipe[]>(() => {
-    try {
-      const saved = localStorage.getItem('kulkas_favorite_recipes');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+    const user = db.getCurrentUser();
+    return user ? db.getUserData(user.id).favoriteRecipes || [] : [];
   });
 
   // Opsi 4: Share modal state
@@ -130,23 +149,62 @@ export default function App() {
     }, 3000);
   };
 
-  // Persist shopping items
+  // Persist user's inventory, shopping items, and favorites directly into their database account
   useEffect(() => {
-    try {
-      localStorage.setItem('kulkas_shopping_items', JSON.stringify(shoppingItems));
-    } catch {
-      // storage quota or disabled
+    if (currentUser) {
+      db.saveUserData(currentUser.id, {
+        userId: currentUser.id,
+        ingredients,
+        selectedFridgeIds,
+        shoppingItems,
+        favoriteRecipes,
+        filters,
+        photos,
+        updatedAt: Date.now()
+      });
     }
-  }, [shoppingItems]);
+  }, [currentUser, ingredients, selectedFridgeIds, shoppingItems, favoriteRecipes, filters, photos]);
 
-  // Persist favorite recipes
-  useEffect(() => {
-    try {
-      localStorage.setItem('kulkas_favorite_recipes', JSON.stringify(favoriteRecipes));
-    } catch {
-      // storage quota or disabled
-    }
-  }, [favoriteRecipes]);
+  // Account management handlers
+  const handleUserChanged = (newUser: User) => {
+    setCurrentUser(newUser);
+    const data = db.getUserData(newUser.id);
+    setIngredients(data.ingredients || []);
+    setSelectedFridgeIds(data.selectedFridgeIds || {});
+    setShoppingItems(data.shoppingItems || []);
+    setFavoriteRecipes(data.favoriteRecipes || []);
+    if (data.filters) setFilters(data.filters);
+    if (data.photos) setPhotos(data.photos);
+    showToast(`Beralih ke akun ${newUser.name}. Stok kulkas: ${(data.ingredients || []).length} bahan.`);
+  };
+
+  const handleClearFridge = () => {
+    if (!currentUser) return;
+    setIngredients([]);
+    setSelectedFridgeIds({});
+    db.clearUserFridge(currentUser.id);
+    showToast('Kulkas berhasil dikosongkan!');
+  };
+
+  const handleLoadSampleIngredients = () => {
+    if (!currentUser) return;
+    setIngredients(INITIAL_INGREDIENTS);
+    const map: Record<string, boolean> = {};
+    INITIAL_INGREDIENTS.forEach(ing => {
+      map[ing.id] = true;
+    });
+    setSelectedFridgeIds(map);
+    showToast('Contoh bahan demo berhasil dimasukkan ke kulkas!');
+  };
+
+  const handleLogout = () => {
+    db.logout();
+    setCurrentUser(null);
+    setIngredients([]);
+    setSelectedFridgeIds({});
+    showToast('Berhasil keluar dari akun.');
+    setIsAuthModalOpen(true);
+  };
 
   // Opsi 1 Handlers: Shopping List
   const handleAddShoppingItem = (name: string, amount: string) => {
@@ -497,6 +555,7 @@ export default function App() {
       {/* Navbar with Brand: Isi Kulkasku & Action Buttons */}
       <Navbar
         onScanClick={() => {
+          setSearchMode('hybrid');
           const el = document.getElementById('search-menu-section');
           el?.scrollIntoView({ behavior: 'smooth' });
         }}
@@ -517,6 +576,14 @@ export default function App() {
         }}
         favoritesCount={favoriteRecipes.length}
         geminiConnected={geminiConnected}
+        currentUser={currentUser}
+        onAccountClick={() => {
+          if (currentUser) {
+            setIsAccountMenuOpen(true);
+          } else {
+            setIsAuthModalOpen(true);
+          }
+        }}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 space-y-10 md:space-y-14">
@@ -546,6 +613,8 @@ export default function App() {
               const el = document.getElementById('search-menu-section');
               el?.scrollIntoView({ behavior: 'smooth' });
             }}
+            currentUser={currentUser}
+            onLoadSampleIngredients={handleLoadSampleIngredients}
           />
         </section>
 
@@ -1252,6 +1321,37 @@ export default function App() {
         recipe={sharingRecipe}
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
+      />
+
+      {/* Multi-Account Authentication & Registration Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        currentUser={currentUser}
+        onUserChanged={handleUserChanged}
+      />
+
+      {/* Account Management & Database Backup Modal */}
+      <AccountMenuModal
+        isOpen={isAccountMenuOpen}
+        onClose={() => setIsAccountMenuOpen(false)}
+        currentUser={currentUser}
+        onOpenSwitchAccount={() => setIsAuthModalOpen(true)}
+        onClearFridge={handleClearFridge}
+        onDataImported={() => {
+          if (currentUser) {
+            const data = db.getUserData(currentUser.id);
+            setIngredients(data.ingredients || []);
+            setSelectedFridgeIds(data.selectedFridgeIds || {});
+            setShoppingItems(data.shoppingItems || []);
+            setFavoriteRecipes(data.favoriteRecipes || []);
+            showToast('Data kulkas berhasil dipulihkan dari cadangan!');
+          }
+        }}
+        onLogout={handleLogout}
+        ingredientCount={ingredients.length}
+        favoriteCount={favoriteRecipes.length}
+        shoppingCount={shoppingItems.length}
       />
 
       {/* Footer */}

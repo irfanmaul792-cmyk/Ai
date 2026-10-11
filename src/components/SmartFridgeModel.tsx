@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ingredient, IngredientShelf, IngredientCategory } from '../types';
+import { Ingredient, IngredientShelf, IngredientCategory, User } from '../types';
 import { resolveIngredientIcon, resolveIngredientCategory } from '../utils/ingredientVisuals';
 import {
   Thermometer,
@@ -11,7 +11,9 @@ import {
   ShieldCheck,
   Search,
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  Database,
+  Sparkle
 } from 'lucide-react';
 
 interface SmartFridgeModelProps {
@@ -19,6 +21,8 @@ interface SmartFridgeModelProps {
   onAddIngredient: (ingredient: Omit<Ingredient, 'id'>) => void;
   onRemoveIngredient: (id: string) => void;
   onSearchRecipes: () => void;
+  currentUser?: User | null;
+  onLoadSampleIngredients?: () => void;
 }
 
 export const SmartFridgeModel: React.FC<SmartFridgeModelProps> = ({
@@ -26,6 +30,8 @@ export const SmartFridgeModel: React.FC<SmartFridgeModelProps> = ({
   onAddIngredient,
   onRemoveIngredient,
   onSearchRecipes,
+  currentUser,
+  onLoadSampleIngredients,
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const [activeZone, setActiveZone] = useState<IngredientShelf | 'all'>('all');
@@ -128,13 +134,21 @@ export const SmartFridgeModel: React.FC<SmartFridgeModelProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-xs uppercase tracking-widest text-emerald-400 font-semibold">Dual-Inverter Hub</span>
             <span className="text-stone-600">·</span>
-            <span className="text-xs text-stone-300">Inventaris Dapur Mandiri</span>
+            <span className="text-xs text-emerald-300 flex items-center gap-1 font-mono">
+              <Database className="w-3 h-3 inline" />
+              <span>Database {currentUser ? currentUser.name : 'Mandiri'}</span>
+            </span>
           </div>
-          <h3 className="text-2xl md:text-3xl font-bold font-display text-white mt-0.5">
-            Kulkas Pintar
+          <h3 className="text-2xl md:text-3xl font-bold font-display text-white mt-0.5 flex items-center gap-2">
+            <span>Kulkas Pintar</span>
+            {currentUser && (
+              <span className="text-base md:text-lg font-normal text-stone-400">
+                ({currentUser.name})
+              </span>
+            )}
           </h3>
           <p className="text-xs md:text-sm text-stone-400 mt-1 max-w-2xl">
-            Kelola dan tambahkan bahan makanan yang kamu miliki langsung ke dalam rak Kulkas Pintar. Sistem rekomendasi resep akan membaca seluruh stok yang ada di sini!
+            Kelola dan tambahkan bahan makanan yang kamu miliki langsung ke dalam rak Kulkas Pintar. Semua bahan tersimpan aman di database akun Anda!
           </p>
         </div>
 
@@ -386,6 +400,41 @@ export const SmartFridgeModel: React.FC<SmartFridgeModelProps> = ({
             <div className="bg-stone-950 rounded-3xl p-5 md:p-7 border border-stone-800 space-y-6">
               {/* LED Lighting Bar */}
               <div className="h-1.5 w-full bg-gradient-to-r from-transparent via-cyan-300 to-transparent opacity-60 rounded-full" />
+
+              {/* Empty Fridge Banner for Brand New / Clean Account */}
+              {ingredients.length === 0 && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-stone-900/90 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">✨</span>
+                      <h4 className="text-sm font-bold text-emerald-300">Kulkas Akun Anda Saat Ini Bersih & Kosong</h4>
+                    </div>
+                    <p className="text-xs text-stone-300 max-w-xl">
+                      Kulkas siap diisi dengan bahan dapur Anda sendiri tanpa tercampur bahan bawaan. Tambah bahan sekarang atau unggah foto dapur untuk mulai mencari resep!
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setIsAdding(true)}
+                      className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>+ Tambah Bahan Pertama</span>
+                    </button>
+                    {onLoadSampleIngredients && (
+                      <button
+                        type="button"
+                        onClick={onLoadSampleIngredients}
+                        className="px-3 py-2 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-medium transition-all cursor-pointer"
+                        title="Muat contoh bahan telur, kangkung, dll untuk coba demo"
+                      >
+                        Muat Contoh Demo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
                 {/* Main Shelves (8 Cols) */}

@@ -79,3 +79,23 @@ export interface Recipe {
   tasteProfile: string[];
   theme?: string;
 }
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  createdAt: number;
+  lastLoginAt: number;
+}
+
+export interface UserAccountData {
+  userId: string;
+  ingredients: Ingredient[];
+  selectedFridgeIds: Record<string, boolean>;
+  shoppingItems: ShoppingItem[];
+  favoriteRecipes: Recipe[];
+  filters: FilterOptions;
+  photos: UploadedPhoto[];
+  updatedAt: number;
+}

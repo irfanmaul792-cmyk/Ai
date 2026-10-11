@@ -1,5 +1,6 @@
 import React from 'react';
-import { ShoppingBag, Bookmark } from 'lucide-react';
+import { ShoppingBag, Bookmark, User as UserIcon } from 'lucide-react';
+import { User } from '../types';
 
 interface NavbarProps {
   onScanClick: () => void;
@@ -10,6 +11,8 @@ interface NavbarProps {
   onFavoritesClick?: () => void;
   favoritesCount?: number;
   geminiConnected?: boolean | null;
+  currentUser?: User | null;
+  onAccountClick?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -21,6 +24,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onFavoritesClick,
   favoritesCount = 0,
   geminiConnected,
+  currentUser,
+  onAccountClick,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-[#F8F7F3]/90 backdrop-blur-md border-b border-stone-200/80">
@@ -113,6 +118,30 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-stone-200 text-stone-700">
               <span>Mode Lokal</span>
             </span>
+          )}
+
+          {/* User Account / Database Profile */}
+          {onAccountClick && (
+            <button
+              type="button"
+              onClick={onAccountClick}
+              className="px-2.5 py-1.5 rounded-xl border border-stone-300/80 bg-white/80 hover:bg-white text-stone-800 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+              title="Kelola Akun & Database Kulkas"
+            >
+              {currentUser ? (
+                <>
+                  <span className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center text-sm">
+                    {currentUser.avatar || '👨‍🍳'}
+                  </span>
+                  <span className="hidden sm:inline max-w-[110px] truncate">{currentUser.name}</span>
+                </>
+              ) : (
+                <>
+                  <UserIcon className="w-4 h-4 text-emerald-700" />
+                  <span className="hidden sm:inline">Masuk</span>
+                </>
+              )}
+            </button>
           )}
 
           <button
