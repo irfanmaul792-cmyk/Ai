@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Bookmark, User as UserIcon } from 'lucide-react';
+import { ShoppingBag, Bookmark, User as UserIcon, LogOut } from 'lucide-react';
 import { User } from '../types';
 
 interface NavbarProps {
@@ -13,6 +13,7 @@ interface NavbarProps {
   geminiConnected?: boolean | null;
   currentUser?: User | null;
   onAccountClick?: () => void;
+  onLogout?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -26,6 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   geminiConnected,
   currentUser,
   onAccountClick,
+  onLogout,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-[#F8F7F3]/90 backdrop-blur-md border-b border-stone-200/80">
@@ -121,27 +123,45 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
 
           {/* User Account / Database Profile */}
-          {onAccountClick && (
-            <button
-              type="button"
-              onClick={onAccountClick}
-              className="px-2.5 py-1.5 rounded-xl border border-stone-300/80 bg-white/80 hover:bg-white text-stone-800 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-              title="Kelola Akun & Database Kulkas"
-            >
-              {currentUser ? (
-                <>
+          {currentUser ? (
+            <div className="flex items-center gap-1.5">
+              {onAccountClick && (
+                <button
+                  type="button"
+                  onClick={onAccountClick}
+                  className="px-2.5 py-1.5 rounded-xl border border-stone-300/80 bg-white/80 hover:bg-white text-stone-800 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                  title="Kelola Akun & Database Kulkas"
+                >
                   <span className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center text-sm">
                     {currentUser.avatar || '👨‍🍳'}
                   </span>
-                  <span className="hidden sm:inline max-w-[110px] truncate">{currentUser.name}</span>
-                </>
-              ) : (
-                <>
-                  <UserIcon className="w-4 h-4 text-emerald-700" />
-                  <span className="hidden sm:inline">Masuk</span>
-                </>
+                  <span className="hidden sm:inline max-w-[100px] truncate">{currentUser.name}</span>
+                </button>
               )}
-            </button>
+
+              {onLogout && (
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="p-1.5 sm:px-2.5 py-1.5 rounded-xl border border-stone-300/80 bg-white/60 hover:bg-rose-50 text-stone-600 hover:text-rose-700 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                  title="Keluar dari akun kulkas"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline">Keluar</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            onAccountClick && (
+              <button
+                type="button"
+                onClick={onAccountClick}
+                className="px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+              >
+                <UserIcon className="w-4 h-4" />
+                <span>Masuk / Daftar</span>
+              </button>
+            )
           )}
 
           <button

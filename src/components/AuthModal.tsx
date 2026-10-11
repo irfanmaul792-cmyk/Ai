@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User as UserIcon, LogIn, UserPlus, Users, X, Shield, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User as UserIcon, LogIn, UserPlus, Users, X, Shield, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
 import { db } from '../services/db';
 import { User } from '../types';
 
@@ -8,6 +8,7 @@ interface AuthModalProps {
   onClose: () => void;
   currentUser: User | null;
   onUserChanged: (user: User) => void;
+  initialMode?: 'login' | 'register' | 'switch';
 }
 
 const AVATAR_OPTIONS = ['👨‍🍳', '👩‍🍳', '🍳', '🥗', '🍲', '🥑', '🥩', '🧀', '🏡', '🌟'];
@@ -17,8 +18,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   currentUser,
   onUserChanged,
+  initialMode = 'switch',
 }) => {
-  const [mode, setMode] = useState<'login' | 'register' | 'switch'>('switch');
+  const [mode, setMode] = useState<'login' | 'register' | 'switch'>(() => {
+    const users = db.getUsers();
+    if (users.length === 0) return 'register';
+    return initialMode;
+  });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -26,8 +32,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [userListVersion, setUserListVersion] = useState(0);
+
+  useEffect(() => {
+    if (isOpen) {
+      const users = db.getUsers();
+      if (users.length === 0) {
+        setMode('register');
+      } else if (initialMode) {
+        setMode(initialMode);
+      } else if (!currentUser) {
+        setMode('login');
+      }
+      setError(null);
+      setSuccess(null);
+    }
+  }, [isOpen, initialMode, currentUser]);
 
   if (!isOpen) return null;
+
+  const handleDeleteAccount = (userId: string, userName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm(`Hapus akun "${userName}" beserta seluruh data kulkasnya dari perangkat ini?`)) {
+      db.deleteUser(userId);
+      setUserListVersion(v => v + 1);
+      setError(null);
+      setSuccess(`Akun "${userName}" berhasil dihapus.`);
+      if (currentUser?.id === userId) {
+        db.logout();
+        window.location.reload();
+      }
+    }
+  };
 
   const allUsers = db.getUsers();
 
@@ -96,69 +132,75 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm animate-fade-in">
-      <div className="bg-stone-900 border border-stone-800 text-stone-100 rounded-3xl w-full max-w-lg p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 flex items-center justify-center bg-stone-950/80 backdrop-blur-sm animate-fade-in">
+      <div className="bg-stone-900 border border-stone-800 text-stone-100 rounded-3xl w-full max-w-lg shadow-2xl relative my-auto max-h-[92vh] flex flex-col overflow-hidden">
         {/* Subtle glow */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Close Button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-5 right-5 text-stone-400 hover:text-white p-2 rounded-xl hover:bg-stone-800 transition-colors cursor-pointer"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {/* Pinned Header */}
+        <div className="p-5 sm:p-6 pb-3 border-b border-stone-800/80 shrink-0 relative">
+          {/* Close Button - Only available if user is already logged in */}
+          {currentUser && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 text-stone-400 hover:text-white p-2 rounded-xl hover:bg-stone-800 transition-colors cursor-pointer"
+              title="Tutup Modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
 
-        {/* Header */}
-        <div className="mb-6">
           <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
             <Shield className="w-3.5 h-3.5" />
             <span>Database Akun Mandiri</span>
           </div>
-          <h2 className="text-2xl font-bold font-display text-white mt-1">
+          <h2 className="text-xl sm:text-2xl font-bold font-display text-white mt-1">
             {mode === 'switch' && 'Pilih / Ganti Akun Kulkas'}
             {mode === 'login' && 'Masuk ke Kulkas Anda'}
-            {mode === 'register' && 'Buat Akun Kulkas Baru'}
+            {mode === 'register' && 'Daftar Akun Kulkas Baru'}
           </h2>
-          <p className="text-xs sm:text-sm text-stone-400 mt-1">
-            Setiap akun memiliki kulkas dan catatan menu tersendiri yang tersimpan di database perangkat.
+          <p className="text-xs text-stone-400 mt-1">
+            Setiap akun memiliki kulkas dan catatan menu tersendiri di perangkat Anda.
           </p>
+
+          {/* Mode Selector Tabs */}
+          <div className="flex p-1 bg-stone-950 rounded-2xl border border-stone-800 mt-3.5">
+            <button
+              type="button"
+              onClick={() => { setMode('switch'); setError(null); }}
+              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                mode === 'switch' ? 'bg-emerald-600 text-white shadow-sm' : 'text-stone-400 hover:text-stone-200'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Daftar Akun</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('register'); setError(null); }}
+              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                mode === 'register' ? 'bg-emerald-600 text-white shadow-sm' : 'text-stone-400 hover:text-stone-200'
+              }`}
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Daftar Baru</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('login'); setError(null); }}
+              className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                mode === 'login' ? 'bg-emerald-600 text-white shadow-sm' : 'text-stone-400 hover:text-stone-200'
+              }`}
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Masuk</span>
+            </button>
+          </div>
         </div>
 
-        {/* Mode Selector Tabs */}
-        <div className="flex p-1 bg-stone-950 rounded-2xl border border-stone-800 mb-6">
-          <button
-            type="button"
-            onClick={() => { setMode('switch'); setError(null); }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              mode === 'switch' ? 'bg-emerald-600 text-white shadow-sm' : 'text-stone-400 hover:text-stone-200'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>Daftar Akun</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode('register'); setError(null); }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              mode === 'register' ? 'bg-emerald-600 text-white shadow-sm' : 'text-stone-400 hover:text-stone-200'
-            }`}
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>Daftar Baru</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode('login'); setError(null); }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              mode === 'login' ? 'bg-emerald-600 text-white shadow-sm' : 'text-stone-400 hover:text-stone-200'
-            }`}
-          >
-            <LogIn className="w-3.5 h-3.5" />
-            <span>Masuk</span>
-          </button>
-        </div>
+        {/* Scrollable Body Container */}
+        <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-4">
 
         {/* Notification feedback */}
         {error && (
@@ -181,56 +223,84 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               Pilih akun yang ingin Anda gunakan. Kulkas dan resep akun terpilih akan langsung aktif:
             </p>
 
-            <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
-              {allUsers.map((u) => {
-                const isActive = currentUser?.id === u.id;
-                const data = db.getUserData(u.id);
-                const itemCount = data.ingredients.length;
+            {allUsers.length === 0 ? (
+              <div className="text-center py-6 px-4 bg-stone-950/60 rounded-2xl border border-stone-800">
+                <UserPlus className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-80" />
+                <p className="text-sm font-semibold text-stone-200">Belum Ada Akun Terdaftar</p>
+                <p className="text-xs text-stone-400 mt-1 mb-4">
+                  Buat akun pertama Anda sekarang untuk mulai mengelola kulkas pribadi yang bersih.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setMode('register')}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Daftar Akun Baru Sekarang
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                {allUsers.map((u) => {
+                  const isActive = currentUser?.id === u.id;
+                  const data = db.getUserData(u.id);
+                  const itemCount = data.ingredients.length;
 
-                return (
-                  <div
-                    key={u.id}
-                    onClick={() => handleQuickSwitch(u.id)}
-                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                      isActive
-                        ? 'bg-emerald-950/40 border-emerald-500 text-white'
-                        : 'bg-stone-950/60 border-stone-800 hover:border-stone-700 text-stone-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-2xl bg-stone-800 flex items-center justify-center text-2xl border border-stone-700 shadow-inner">
-                        {u.avatar || '👨‍🍳'}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-stone-100">{u.name}</span>
-                          {isActive && (
-                            <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30">
-                              Aktif Sekarang
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-stone-400">{u.email}</p>
-                        <p className="text-[11px] text-stone-300 mt-0.5 font-mono">
-                          Stok kulkas: <span className="text-emerald-400 font-semibold">{itemCount} bahan</span>
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-all ${
+                  return (
+                    <div
+                      key={u.id}
+                      onClick={() => handleQuickSwitch(u.id)}
+                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                         isActive
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-stone-800 text-stone-300 hover:bg-stone-700'
+                          ? 'bg-emerald-950/40 border-emerald-500 text-white'
+                          : 'bg-stone-950/60 border-stone-800 hover:border-stone-700 text-stone-300'
                       }`}
                     >
-                      {isActive ? 'Aktif' : 'Pilih Akun'}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-2xl bg-stone-800 flex items-center justify-center text-2xl border border-stone-700 shadow-inner">
+                          {u.avatar || '👨‍🍳'}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-sm text-stone-100">{u.name}</span>
+                            {isActive && (
+                              <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                                Aktif Sekarang
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-stone-400">{u.email}</p>
+                          <p className="text-[11px] text-stone-300 mt-0.5 font-mono">
+                            Stok kulkas: <span className="text-emerald-400 font-semibold">{itemCount} bahan</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteAccount(u.id, u.name, e)}
+                          className="p-1.5 rounded-lg text-stone-500 hover:text-rose-400 hover:bg-stone-800/80 transition-colors cursor-pointer"
+                          title={`Hapus Akun ${u.name}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleQuickSwitch(u.id)}
+                          className={`text-xs px-3 py-1.5 rounded-xl font-semibold transition-all ${
+                            isActive
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-stone-800 text-stone-300 hover:bg-stone-700'
+                          }`}
+                        >
+                          {isActive ? 'Aktif' : 'Pilih Akun'}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             <div className="pt-3 border-t border-stone-800 flex items-center justify-between">
               <button
@@ -322,14 +392,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              <UserPlus className="w-4 h-4" />
-              <span>{loading ? 'Menyimpan ke Database...' : 'Buat Akun & Masuk'}</span>
-            </button>
+            {/* Tombol Selesai Daftar Akun */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold text-sm sm:text-base shadow-xl shadow-emerald-950/60 transition-all cursor-pointer flex items-center justify-center gap-2 border border-emerald-400/40"
+              >
+                <UserPlus className="w-5 h-5 shrink-0" />
+                <span>{loading ? 'Menyimpan ke Database...' : '✓ Selesai Daftar & Masuk Akun'}</span>
+              </button>
+              <p className="text-center text-[11px] text-stone-400 mt-2">
+                👆 Klik tombol hijau di atas untuk menyelesaikan pendaftaran
+              </p>
+            </div>
+
+            <div className="pt-1 text-center border-t border-stone-800/60">
+              <button
+                type="button"
+                onClick={() => setMode('login')}
+                className="text-xs text-stone-400 hover:text-emerald-400 transition-colors cursor-pointer"
+              >
+                Sudah punya akun? Masuk di sini &rarr;
+              </button>
+            </div>
           </form>
         )}
 
@@ -363,26 +449,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>{loading ? 'Memeriksa Database...' : 'Masuk Sekarang'}</span>
-            </button>
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold text-sm sm:text-base shadow-xl shadow-emerald-950/60 transition-all cursor-pointer flex items-center justify-center gap-2 border border-emerald-400/40"
+              >
+                <LogIn className="w-5 h-5 shrink-0" />
+                <span>{loading ? 'Memeriksa Database...' : '✓ Masuk ke Kulkas Sekarang'}</span>
+              </button>
+            </div>
 
-            <div className="pt-2 text-center">
+            <div className="pt-1 text-center border-t border-stone-800/60">
               <button
                 type="button"
                 onClick={() => setMode('register')}
-                className="text-xs text-emerald-400 hover:text-emerald-300"
+                className="text-xs text-stone-400 hover:text-emerald-400 transition-colors cursor-pointer"
               >
-                Belum punya akun? Daftar akun baru di sini
+                Belum punya akun? Daftar akun baru di sini &rarr;
               </button>
             </div>
           </form>
         )}
+        </div>
       </div>
     </div>
   );

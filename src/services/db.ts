@@ -53,44 +53,38 @@ class DatabaseService {
   }
 
   /**
-   * Initializes database with initial structure if empty
+   * Initializes database with initial structure if empty.
+   * Purges any legacy "user_keluarga" or "Dapur Keluarga" demo data.
    */
   private initDatabase(): void {
     try {
-      const existingUsers = this.getUsers();
-      if (existingUsers.length === 0) {
-        // Pre-create initial user "Akun Utama" with EMPTY fridge
-        const defaultUser: User = {
-          id: 'user_irfan',
-          name: 'Irfan Maulana',
-          email: 'irfanmaul792@gmail.com',
-          avatar: '👨‍🍳',
-          createdAt: Date.now(),
-          lastLoginAt: Date.now()
-        };
+      // Purge legacy demo "user_keluarga" / "Dapur Keluarga" completely if it exists
+      const raw = localStorage.getItem(USERS_STORAGE_KEY);
+      if (raw) {
+        try {
+          const users: User[] = JSON.parse(raw);
+          const filtered = users.filter(u => 
+            u.id !== 'user_keluarga' && 
+            u.name.toLowerCase() !== 'dapur keluarga' && 
+            !u.email.toLowerCase().includes('keluarga')
+          );
+          if (filtered.length !== users.length) {
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(filtered));
+            localStorage.removeItem('kulkas_user_data_user_keluarga');
+            localStorage.removeItem('kulkas_db_auth_user_keluarga');
+          }
+        } catch {
+          // ignore
+        }
+      }
 
-        // Also create a second demo family account so the user can immediately test multi-account switching!
-        const familyUser: User = {
-          id: 'user_keluarga',
-          name: 'Dapur Keluarga',
-          email: 'keluarga@dapur.id',
-          avatar: '🏡',
-          createdAt: Date.now(),
-          lastLoginAt: Date.now()
-        };
-
-        const users = [defaultUser, familyUser];
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-
-        // Initial empty account data for both (KULKAS KOSONG)
-        this.saveUserData(defaultUser.id, createEmptyAccountData(defaultUser.id));
-        this.saveUserData(familyUser.id, createEmptyAccountData(familyUser.id));
-
-        // Set default logged in user
-        localStorage.setItem(CURRENT_USER_KEY, defaultUser.id);
+      // If active user was user_keluarga, clear it
+      const currentId = localStorage.getItem(CURRENT_USER_KEY);
+      if (currentId === 'user_keluarga') {
+        localStorage.removeItem(CURRENT_USER_KEY);
       }
     } catch (err) {
-      console.warn('Failed to initialize database in localStorage:', err);
+      console.warn('Failed to clean up legacy data in localStorage:', err);
     }
   }
 
@@ -107,16 +101,16 @@ class DatabaseService {
   }
 
   /**
-   * Get currently logged-in user
+   * Get currently logged-in user. Returns null if user is logged out or hasn't logged in.
    */
   public getCurrentUser(): User | null {
     try {
       const currentId = localStorage.getItem(CURRENT_USER_KEY);
-      const users = this.getUsers();
-      if (!currentId && users.length > 0) {
-        return users[0];
+      if (!currentId) {
+        return null;
       }
-      return users.find(u => u.id === currentId) || users[0] || null;
+      const users = this.getUsers();
+      return users.find(u => u.id === currentId) || null;
     } catch {
       return null;
     }
@@ -186,16 +180,19 @@ class DatabaseService {
   }
 
   /**
-   * Login with email and password
+   * Login with email or name and password
    */
   public async loginUser(
-    email: string,
+    emailOrName: string,
     password: string
   ): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
       const users = this.getUsers();
-      const normalizedEmail = email.trim().toLowerCase();
-      const user = users.find(u => u.email.toLowerCase() === normalizedEmail);
+      const query = emailOrName.trim().toLowerCase();
+      const user = users.find(u => 
+        u.email.toLowerCase() === query || 
+        u.name.toLowerCase() === query
+      );
 
       if (!user) {
         return { success: false, error: 'Akun dengan email/nama ini tidak ditemukan. Silakan periksa kembali atau buat akun baru.' };
@@ -216,6 +213,26 @@ class DatabaseService {
       return { success: true, user };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Gagal masuk akun.' };
+    }
+  }
+
+  /**
+   * Delete an account and its saved data
+   */
+  public deleteUser(userId: string): boolean {
+    try {
+      let users = this.getUsers();
+      users = users.filter(u => u.id !== userId);
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+      localStorage.removeItem(`${DATA_PREFIX}${userId}`);
+      localStorage.removeItem(`kulkas_db_auth_${userId}`);
+      this.memoryCache.delete(userId);
+      if (localStorage.getItem(CURRENT_USER_KEY) === userId) {
+        localStorage.removeItem(CURRENT_USER_KEY);
+      }
+      return true;
+    } catch {
+      return false;
     }
   }
 

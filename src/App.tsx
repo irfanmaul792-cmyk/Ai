@@ -8,6 +8,7 @@ import { CookingModeModal } from './components/CookingModeModal';
 import { ShoppingListModal } from './components/ShoppingListModal';
 import { ShareRecipeModal } from './components/ShareRecipeModal';
 import { AuthModal } from './components/AuthModal';
+import { AuthDashboard } from './components/AuthDashboard';
 import { AccountMenuModal } from './components/AccountMenuModal';
 import { SearchModeSelector, SearchMode } from './components/SearchModeSelector';
 import { INITIAL_INGREDIENTS } from './data/initialIngredients';
@@ -53,9 +54,127 @@ export default function App() {
   const [geminiConnected, setGeminiConnected] = useState<boolean | null>(null);
 
   // User Authentication & Multi-Account Database State
-  const [currentUser, setCurrentUser] = useState<User | null>(() => db.getCurrentUser());
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'switch'>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const hash = window.location.hash.toLowerCase();
+      if (params.get('auth') === 'register' || params.get('mode') === 'register' || params.has('register') || params.has('daftar') || hash.includes('register') || hash.includes('daftar')) {
+        return 'register';
+      }
+      if (params.get('auth') === 'login' || params.get('mode') === 'login' || params.has('login') || params.has('logout') || hash.includes('login') || hash.includes('masuk')) {
+        return 'login';
+      }
+    }
+    const users = db.getUsers();
+    if (users.length === 0) return 'register';
+    const cur = db.getCurrentUser();
+    return cur ? 'switch' : 'login';
+  });
+
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    // Check URL parameters for explicit login/logout commands
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const hash = window.location.hash.toLowerCase();
+      const hasAuthParam = 
+        params.get('auth') === 'login' || 
+        params.get('mode') === 'login' || 
+        params.has('login') || 
+        params.has('logout') ||
+        params.get('auth') === 'register' ||
+        params.get('mode') === 'register' ||
+        params.has('register') ||
+        params.has('daftar') ||
+        hash.includes('login') ||
+        hash.includes('register') ||
+        hash.includes('masuk');
+
+      if (hasAuthParam) {
+        db.logout();
+        return null;
+      }
+    }
+    return db.getCurrentUser();
+  });
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const hash = window.location.hash.toLowerCase();
+      const hasAuthParam = 
+        params.get('auth') === 'login' || 
+        params.get('mode') === 'login' || 
+        params.has('login') || 
+        params.has('logout') ||
+        params.get('auth') === 'register' ||
+        params.get('mode') === 'register' ||
+        params.has('register') ||
+        params.has('daftar') ||
+        hash.includes('login') ||
+        hash.includes('register') ||
+        hash.includes('masuk');
+
+      if (hasAuthParam) {
+        return true;
+      }
+    }
+    // Also if no user logged in, prompt user to log in or register
+    return db.getCurrentUser() === null;
+  });
+
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState<boolean>(false);
+
+  // Monitor URL params dynamically for shareable login links
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const evaluateUrlAuth = () => {
+      const params = new URLSearchParams(window.location.search);
+      const hash = window.location.hash.toLowerCase();
+
+      const isRegister = 
+        params.get('auth') === 'register' || 
+        params.get('mode') === 'register' || 
+        params.has('register') || 
+        params.has('daftar') ||
+        hash.includes('register') ||
+        hash.includes('daftar');
+
+      const isLogin = 
+        params.get('auth') === 'login' || 
+        params.get('mode') === 'login' || 
+        params.has('login') || 
+        params.has('logout') ||
+        params.has('keluar') ||
+        hash.includes('login') ||
+        hash.includes('logout') ||
+        hash.includes('masuk');
+
+      if (isRegister) {
+        db.logout();
+        setCurrentUser(null);
+        setIngredients([]);
+        setSelectedFridgeIds({});
+        setAuthModalMode('register');
+        setIsAuthModalOpen(true);
+      } else if (isLogin) {
+        db.logout();
+        setCurrentUser(null);
+        setIngredients([]);
+        setSelectedFridgeIds({});
+        setAuthModalMode('login');
+        setIsAuthModalOpen(true);
+      }
+    };
+
+    evaluateUrlAuth();
+    window.addEventListener('popstate', evaluateUrlAuth);
+    window.addEventListener('hashchange', evaluateUrlAuth);
+    return () => {
+      window.removeEventListener('popstate', evaluateUrlAuth);
+      window.removeEventListener('hashchange', evaluateUrlAuth);
+    };
+  }, []);
 
   // Ingredients in Kulkas Pintar (Isolated per user account - starts clean/empty for new user!)
   const [ingredients, setIngredients] = useState<Ingredient[]>(() => {
@@ -197,13 +316,14 @@ export default function App() {
     showToast('Contoh bahan demo berhasil dimasukkan ke kulkas!');
   };
 
-  const handleLogout = () => {
+  const handleLogout = (targetMode: 'login' | 'register' | 'switch' = 'login') => {
     db.logout();
     setCurrentUser(null);
     setIngredients([]);
     setSelectedFridgeIds({});
     showToast('Berhasil keluar dari akun.');
-    setIsAuthModalOpen(true);
+    setAuthModalMode(targetMode);
+    setIsAuthModalOpen(false);
   };
 
   // Opsi 1 Handlers: Shopping List
@@ -542,6 +662,17 @@ export default function App() {
     i => i.urgency === 'urgent' || (i.daysRemaining && i.daysRemaining <= 2)
   );
 
+  // Jika pengguna belum login, tampilkan Dashboard Mandiri Login & Registrasi
+  // (Terpisah secara penuh antara portal login dan tampilan aplikasi Isi Kulkasku)
+  if (!currentUser) {
+    return (
+      <AuthDashboard
+        onLoginSuccess={handleUserChanged}
+        initialMode={authModalMode}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F8F7F3] text-stone-900 flex flex-col font-sans relative">
       {/* Toast Notification Floating Banner */}
@@ -584,6 +715,7 @@ export default function App() {
             setIsAuthModalOpen(true);
           }
         }}
+        onLogout={handleLogout}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 space-y-10 md:space-y-14">
@@ -1329,6 +1461,7 @@ export default function App() {
         onClose={() => setIsAuthModalOpen(false)}
         currentUser={currentUser}
         onUserChanged={handleUserChanged}
+        initialMode={authModalMode}
       />
 
       {/* Account Management & Database Backup Modal */}
@@ -1336,7 +1469,10 @@ export default function App() {
         isOpen={isAccountMenuOpen}
         onClose={() => setIsAccountMenuOpen(false)}
         currentUser={currentUser}
-        onOpenSwitchAccount={() => setIsAuthModalOpen(true)}
+        onOpenSwitchAccount={() => {
+          setIsAccountMenuOpen(false);
+          handleLogout('switch');
+        }}
         onClearFridge={handleClearFridge}
         onDataImported={() => {
           if (currentUser) {
