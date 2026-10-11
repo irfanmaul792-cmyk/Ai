@@ -231,5 +231,117 @@ export const RECIPES_DATABASE: Recipe[] = [
     },
     tasteProfile: ['Pedas Gurih Bawang', 'Kering & Harum', 'Praktis'],
     theme: 'pasta'
+  },
+  {
+    id: 'recipe-nasgor-sapi',
+    title: 'Nasi Goreng Daging Sapi Rawit Bawang',
+    description: 'Nasi goreng harum aroma bumbu iris bawang dan cabai rawit, bertabur irisan daging sapi gurih dan telur orak-arik lezat.',
+    matchPercentage: 96,
+    prepTimeMinutes: 5,
+    cookTimeMinutes: 10,
+    totalTimeMinutes: 15,
+    difficulty: 'Praktis',
+    estimatedCost: 'Rp 22.000 / porsi',
+    calories: 510,
+    servings: 2,
+    urgencyMessage: 'Solusi sarapan atau makan malam kilat 15 menit menggunakan stok nasi dan daging.',
+    ingredients: [
+      { name: 'Nasi putih (pera / dingin)', amount: '2 piring (300 gr)', isOwned: true },
+      { name: 'Daging sapi cincang / iris tipis', amount: '150 gr', isOwned: true, urgentPriority: true },
+      { name: 'Telur ayam', amount: '1-2 butir', isOwned: true },
+      { name: 'Bawang merah & putih', amount: '4 siung (iris tipis)', isOwned: true },
+      { name: 'Cabai rawit merah iris', amount: '4-6 buah', isOwned: true },
+      { name: 'Kecap manis & saus tiram', amount: 'Masing-masing 1.5 sdm', isOwned: true },
+      { name: 'Minyak goreng / margarin', amount: '2 sdm', isOwned: true },
+      { name: 'Garam, gula & lada', amount: 'Secukupnya', isOwned: true }
+    ],
+    steps: [
+      {
+        step: 1,
+        instruction: 'Panaskan 1 sdm minyak di wajan, masukkan telur lalu orak-arik hingga matang berbulir. Angkat dan sisihkan.',
+        durationMinutes: 2,
+        tip: 'Gunakan api besar agar telur orak-arik beraroma smoky khas resto.'
+      },
+      {
+        step: 2,
+        instruction: 'Tambahkan sisa minyak, tumis irisan bawang merah, bawang putih, dan cabai rawit hingga harum semerbak.',
+        durationMinutes: 2
+      },
+      {
+        step: 3,
+        instruction: 'Masukkan daging sapi iris, tumis cepat selama 3 menit sampai matang kecokelatan dan sarinya keluar.',
+        durationMinutes: 3,
+        tip: 'Tumis daging dengan api sedang-tinggi agar sari daging meresap ke bumbu tumis.'
+      },
+      {
+        step: 4,
+        instruction: 'Masukkan nasi dingin dan telur orak-arik. Bumbui dengan kecap manis, saus tiram, garam, dan lada. Aduk cepat di atas api besar sampai nasi berbulir rata dan bumbu meresap sempurna.',
+        durationMinutes: 3
+      }
+    ],
+    nutrition: {
+      calories: 510,
+      protein: '27g',
+      carbs: '64g',
+      fat: '17g'
+    },
+    tasteProfile: ['Pedas Gurih', 'Smoky Bawang', 'Kenyang Maksimal'],
+    theme: 'stirfry'
+  },
+  {
+    id: 'recipe-semur-daging-wortel',
+    title: 'Semur Kilat Daging Sapi & Wortel Bumbu Rempah',
+    description: 'Potongan daging sapi empuk dipadu irisan wortel manis dalam kuah kecap rempah pala dan lada yang hangat meresap.',
+    matchPercentage: 91,
+    prepTimeMinutes: 8,
+    cookTimeMinutes: 17,
+    totalTimeMinutes: 25,
+    difficulty: 'Mudah',
+    estimatedCost: 'Rp 29.000 / porsi',
+    calories: 385,
+    servings: 3,
+    urgencyMessage: 'Menu berkuah hangat kaya protein dan vitamin A untuk santap siang atau malam.',
+    ingredients: [
+      { name: 'Daging sapi segar', amount: '250 gr (iris tipis berlawanan serat)', isOwned: true, urgentPriority: true },
+      { name: 'Wortel manis', amount: '2 buah (potong bulat / serong)', isOwned: true, urgentPriority: true },
+      { name: 'Bawang putih & bawang bombay', amount: '3 siung bawang putih & 1/2 butir bombay', isOwned: true },
+      { name: 'Kecap manis kental', amount: '3-4 sdm', isOwned: true },
+      { name: 'Pala bubuk & lada putih bubuk', amount: 'Masing-masing 1/3 sdt', isOwned: true },
+      { name: 'Saus tiram & garam', amount: 'Secukupnya', isOwned: true },
+      { name: 'Air matang / kaldu', amount: '350 ml', isOwned: true },
+      { name: 'Minyak untuk menumis', amount: '1.5 sdm', isOwned: true }
+    ],
+    steps: [
+      {
+        step: 1,
+        instruction: 'Panaskan minyak, tumis bawang putih cincang dan irisan bawang bombay bersama sedikit pala bubuk sampai wangi semerbak.',
+        durationMinutes: 3,
+        tip: 'Menumis pala bubuk bersama bawang di awal membuat aroma semur lebih wangi dan menggugah selera.'
+      },
+      {
+        step: 2,
+        instruction: 'Masukkan irisan daging sapi, aduk rata sampai daging berubah warna menjadi kecokelatan.',
+        durationMinutes: 4
+      },
+      {
+        step: 3,
+        instruction: 'Tuang kecap manis, saus tiram, lada, dan air kaldu. Masukkan potongan wortel. Masak dengan api sedang selama 12 menit hingga wortel empuk dan kuah mengental gurih.',
+        durationMinutes: 12,
+        tip: 'Tutup wajan agar uap panas mematangkan daging dan wortel lebih cepat tanpa kuah cepat surut.'
+      },
+      {
+        step: 4,
+        instruction: 'Koreksi rasa manis gurihnya dengan sejumput garam. Angkat dan sajikan kuah semur hangat berpadu nasi putih.',
+        durationMinutes: 1
+      }
+    ],
+    nutrition: {
+      calories: 385,
+      protein: '30g',
+      carbs: '22g',
+      fat: '19g'
+    },
+    tasteProfile: ['Manis Gurih Berempah', 'Kuah Hangat', 'Daging Juicy'],
+    theme: 'stew'
   }
 ];

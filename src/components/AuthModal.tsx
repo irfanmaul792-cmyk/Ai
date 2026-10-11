@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User as UserIcon, LogIn, UserPlus, Users, X, Shield, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
+import { User as UserIcon, LogIn, UserPlus, Users, X, Shield, CheckCircle2, AlertCircle, Trash2, Eye, EyeOff } from 'lucide-react';
 import { db } from '../services/db';
 import { User } from '../types';
 
@@ -27,6 +27,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('👨‍🍳');
   const [error, setError] = useState<string | null>(null);
@@ -383,13 +384,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <label className="block text-xs font-medium text-stone-300 mb-1.5">
                 Kata Sandi / PIN (Opsional)
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Kosongkan jika tidak butuh sandi"
-                className="w-full px-4 py-2.5 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Kosongkan jika tidak butuh sandi"
+                  className="w-full px-4 py-2.5 pr-11 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500 font-mono tracking-wider"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-200 p-1 rounded-lg transition-colors cursor-pointer"
+                  title={showPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             {/* Tombol Selesai Daftar Akun */}
@@ -440,13 +451,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <label className="block text-xs font-medium text-stone-300 mb-1.5">
                 Kata Sandi / PIN
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Masukkan kata sandi jika ada"
-                className="w-full px-4 py-2.5 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Masukkan kata sandi jika ada"
+                  className="w-full px-4 py-2.5 pr-11 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500 font-mono tracking-wider"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-200 p-1 rounded-lg transition-colors cursor-pointer"
+                  title={showPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div className="pt-2">

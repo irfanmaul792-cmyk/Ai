@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User as UserIcon, X, LogOut, Users, Trash2, Download, Upload, ShieldCheck, Database, Check } from 'lucide-react';
+import { User as UserIcon, X, LogOut, Users, Trash2, Download, Upload, ShieldCheck, Database, Check, KeyRound } from 'lucide-react';
 import { db } from '../services/db';
 import { User } from '../types';
 
@@ -8,6 +8,7 @@ interface AccountMenuModalProps {
   onClose: () => void;
   currentUser: User | null;
   onOpenSwitchAccount: () => void;
+  onOpenChangePassword?: () => void;
   onClearFridge: () => void;
   onDataImported: () => void;
   onLogout: () => void;
@@ -21,6 +22,7 @@ export const AccountMenuModal: React.FC<AccountMenuModalProps> = ({
   onClose,
   currentUser,
   onOpenSwitchAccount,
+  onOpenChangePassword,
   onClearFridge,
   onDataImported,
   onLogout,
@@ -157,6 +159,25 @@ export const AccountMenuModal: React.FC<AccountMenuModalProps> = ({
                 </div>
               </div>
               <span className="text-stone-300 text-xs font-semibold">Pilih &rarr;</span>
+            </button>
+
+            {/* Change Password */}
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenChangePassword?.();
+              }}
+              className="w-full p-3 rounded-2xl bg-stone-950 hover:bg-stone-800 border border-stone-800 transition-all flex items-center justify-between text-left text-xs text-stone-200 cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <KeyRound className="w-4 h-4 text-amber-400" />
+                <div>
+                  <span className="font-semibold block text-stone-100">Ubah Kata Sandi / PIN</span>
+                  <span className="text-[11px] text-stone-300">Ganti kata sandi akun untuk akses di HP lain</span>
+                </div>
+              </div>
+              <span className="text-stone-300 text-xs font-semibold">Ubah &rarr;</span>
             </button>
 
             {/* Empty Fridge */}

@@ -10,6 +10,7 @@ import { ShareRecipeModal } from './components/ShareRecipeModal';
 import { AuthModal } from './components/AuthModal';
 import { AuthDashboard } from './components/AuthDashboard';
 import { AccountMenuModal } from './components/AccountMenuModal';
+import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { SearchModeSelector, SearchMode } from './components/SearchModeSelector';
 import { INITIAL_INGREDIENTS } from './data/initialIngredients';
 import { RECIPES_DATABASE } from './data/recipes';
@@ -258,6 +259,9 @@ export default function App() {
   const [sharingRecipe, setSharingRecipe] = useState<Recipe | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
 
+  // Change Password Modal state
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState<boolean>(false);
+
   // Toast feedback state
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -408,8 +412,9 @@ export default function App() {
     setIsShareModalOpen(true);
   };
 
-  // Check Gemini connection on mount
+  // Check Gemini connection & sync central multi-device database on mount
   useEffect(() => {
+    db.syncWithServer();
     fetch('/api/gemini/status')
       .then(res => res.json())
       .then(data => {
@@ -642,20 +647,117 @@ export default function App() {
   // Recipes to display: prefer AI generated recipes if available
   const displayRecipes = aiRecipes.length > 0 ? aiRecipes : localFallbackRecipes;
 
-  // Category & theme tag filter (supports Opsi 3: Favorit)
-  const filteredRecipes = (selectedTagFilter === 'favorites' ? favoriteRecipes : displayRecipes).filter(recipe => {
-    if (selectedTagFilter === 'favorites') return true;
-    if (selectedTagFilter === 'pasta' && !recipe.title.toLowerCase().includes('pasta') && !recipe.title.toLowerCase().includes('spaghetti')) {
-      return false;
+  // Kategori Dinamis: Ekstrak tag kategori yang benar-benar ada pada kumpulan resep saat ini
+  const dynamicRecipeCategories = React.useMemo(() => {
+    const list = displayRecipes;
+    const categoryMap: Record<string, { label: string; icon: string; count: number; filterFn: (r: Recipe) => boolean }> = {};
+
+    // 1. Pedas (jika ada resep pedas, balado, rica, rica-rica, cabai)
+    const spicyFilter = (r: Recipe) => {
+      const title = r.title.toLowerCase();
+      const tastes = (r.tasteProfile || []).map(t => t.toLowerCase());
+      return tastes.some(t => t.includes('pedas') || t.includes('balado') || t.includes('rica')) ||
+        title.includes('pedas') || title.includes('balado') || title.includes('rica') || title.includes('mercon');
+    };
+    const spicyCount = list.filter(spicyFilter).length;
+    if (spicyCount > 0) {
+      categoryMap['pedas'] = { label: 'Pedas', icon: '🌶️', count: spicyCount, filterFn: spicyFilter };
     }
-    if (selectedTagFilter === 'pedas' && !recipe.tasteProfile.some(t => t.toLowerCase().includes('pedas'))) {
-      return false;
+
+    // 2. Kuah & Sup (jika ada sup, soto, sayur asem, kuah, bening, lodeh)
+    const soupFilter = (r: Recipe) => {
+      const title = r.title.toLowerCase();
+      return title.includes('sup') || title.includes('sayur') || title.includes('kuah') || 
+        title.includes('soto') || title.includes('bening') || title.includes('lodeh') || title.includes('rawon') || title.includes('gulai');
+    };
+    const soupCount = list.filter(soupFilter).length;
+    if (soupCount > 0) {
+      categoryMap['kuah'] = { label: 'Kuah & Sup', icon: '🍲', count: soupCount, filterFn: soupFilter };
     }
-    if (selectedTagFilter === 'sehat' && !recipe.title.toLowerCase().includes('sup') && !recipe.title.toLowerCase().includes('bening') && !recipe.tasteProfile.some(t => t.toLowerCase().includes('alami') || t.toLowerCase().includes('tanpa santan'))) {
-      return false;
+
+    // 3. Tumisan / Oseng (jika ada tumis, oseng, cah)
+    const stirFryFilter = (r: Recipe) => {
+      const title = r.title.toLowerCase();
+      return title.includes('tumis') || title.includes('oseng') || title.includes('cah');
+    };
+    const stirFryCount = list.filter(stirFryFilter).length;
+    if (stirFryCount > 0) {
+      categoryMap['tumis'] = { label: 'Tumisan', icon: '🍳', count: stirFryCount, filterFn: stirFryFilter };
     }
-    return true;
-  });
+
+    // 4. Gorengan / Panggang (jika ada goreng, bakar, panggang, krispi)
+    const friedFilter = (r: Recipe) => {
+      const title = r.title.toLowerCase();
+      return title.includes('goreng') || title.includes('krispi') || title.includes('crispy') || title.includes('bakar') || title.includes('panggang');
+    };
+    const friedCount = list.filter(friedFilter).length;
+    if (friedCount > 0) {
+      categoryMap['goreng'] = { label: 'Goreng & Bakar', icon: '🍗', count: friedCount, filterFn: friedFilter };
+    }
+
+    // 5. Olahan Ayam / Daging
+    const meatFilter = (r: Recipe) => {
+      const title = r.title.toLowerCase();
+      return title.includes('ayam') || title.includes('sapi') || title.includes('daging') || title.includes('bakso') || title.includes('sosis');
+    };
+    const meatCount = list.filter(meatFilter).length;
+    if (meatCount > 0) {
+      categoryMap['daging'] = { label: 'Ayam & Daging', icon: '🥩', count: meatCount, filterFn: meatFilter };
+    }
+
+    // 6. Sayuran / Nabati / Tahu Tempe
+    const veggieFilter = (r: Recipe) => {
+      const title = r.title.toLowerCase();
+      return title.includes('tahu') || title.includes('tempe') || title.includes('sayur') || title.includes('bayam') || 
+        title.includes('kangkung') || title.includes('brokoli') || title.includes('buncis') || title.includes('jamur') || title.includes('terong');
+    };
+    const veggieCount = list.filter(veggieFilter).length;
+    if (veggieCount > 0) {
+      categoryMap['sayur'] = { label: 'Sayur & Nabati', icon: '🥬', count: veggieCount, filterFn: veggieFilter };
+    }
+
+    // 7. Mie & Pasta (hanya jika memang ada mie / pasta!)
+    const pastaFilter = (r: Recipe) => {
+      const title = r.title.toLowerCase();
+      return title.includes('pasta') || title.includes('spaghetti') || title.includes('mie') || title.includes('bihun') || title.includes('kwetiau');
+    };
+    const pastaCount = list.filter(pastaFilter).length;
+    if (pastaCount > 0) {
+      categoryMap['mie_pasta'] = { label: 'Mie & Pasta', icon: '🍝', count: pastaCount, filterFn: pastaFilter };
+    }
+
+    // 8. Cepat & Praktis (<= 20 menit)
+    const quickFilter = (r: Recipe) => {
+      return (r.cookTimeMinutes && r.cookTimeMinutes <= 20) || (r.totalTimeMinutes && r.totalTimeMinutes <= 25) || r.difficulty === 'Mudah' || r.difficulty === 'Praktis';
+    };
+    const quickCount = list.filter(quickFilter).length;
+    if (quickCount > 0) {
+      categoryMap['cepat'] = { label: 'Praktis (≤20m)', icon: '⚡', count: quickCount, filterFn: quickFilter };
+    }
+
+    return Object.entries(categoryMap).map(([id, item]) => ({
+      id,
+      label: item.label,
+      icon: item.icon,
+      count: item.count,
+      filterFn: item.filterFn,
+    }));
+  }, [displayRecipes]);
+
+  // Filter resep berdasarkan kategori aktif yang dipilih
+  const filteredRecipes = React.useMemo(() => {
+    if (selectedTagFilter === 'favorites') {
+      return favoriteRecipes;
+    }
+    if (selectedTagFilter === 'all') {
+      return displayRecipes;
+    }
+    const activeCategory = dynamicRecipeCategories.find(c => c.id === selectedTagFilter);
+    if (activeCategory) {
+      return displayRecipes.filter(activeCategory.filterFn);
+    }
+    return displayRecipes;
+  }, [selectedTagFilter, favoriteRecipes, displayRecipes, dynamicRecipeCategories]);
 
   // Urgent ingredients expiring soon for Zero-Waste Alert (Opsi 5)
   const urgentIngredients = ingredients.filter(
@@ -1263,7 +1365,7 @@ export default function App() {
                 <span>Variasi Resep Baru</span>
               </button>
 
-              {/* Filter segments */}
+              {/* Filter segments (Otomatis Dinamis Mengikuti Resep yang Ada) */}
               <div className="flex flex-wrap items-center gap-1 p-1 bg-stone-200/70 rounded-xl">
                 <button
                   type="button"
@@ -1274,8 +1376,9 @@ export default function App() {
                       : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
-                  Semua ({selectedTagFilter === 'favorites' ? displayRecipes.length : filteredRecipes.length})
+                  Semua ({displayRecipes.length})
                 </button>
+
                 {/* Opsi 3: Favorit filter segment */}
                 <button
                   type="button"
@@ -1289,45 +1392,29 @@ export default function App() {
                   <Bookmark className={`w-3.5 h-3.5 ${selectedTagFilter === 'favorites' ? 'fill-amber-600 text-amber-600' : ''}`} />
                   <span>Favorit ({favoriteRecipes.length})</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => startTransition(() => setSelectedTagFilter('pasta'))}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                    selectedTagFilter === 'pasta'
-                      ? 'bg-white text-stone-950 shadow-sm'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  🍝 Pasta
-                </button>
-                <button
-                  type="button"
-                  onClick={() => startTransition(() => setSelectedTagFilter('pedas'))}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                    selectedTagFilter === 'pedas'
-                      ? 'bg-white text-stone-950 shadow-sm'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  🌶️ Pedas
-                </button>
-                <button
-                  type="button"
-                  onClick={() => startTransition(() => setSelectedTagFilter('sehat'))}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                    selectedTagFilter === 'sehat'
-                      ? 'bg-white text-stone-950 shadow-sm'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  🍲 Sup
-                </button>
+
+                {/* Tag Kategori Dinamis: Hanya muncul jika resep dengan kategori ini benar-benar ada */}
+                {dynamicRecipeCategories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => startTransition(() => setSelectedTagFilter(cat.id))}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                      selectedTagFilter === cat.id
+                        ? 'bg-white text-stone-950 shadow-sm font-bold'
+                        : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                  >
+                    <span>{cat.icon}</span>
+                    <span>{cat.label} ({cat.count})</span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Recipe Cards Grid (No Images, Clean & Typographic) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 sm:gap-8">
+          {/* Recipe Cards Grid (No Images, Clean & Typographic - 6 Resep) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {filteredRecipes.map((recipe) => (
               <RecipeCard
                 key={recipe.id}
@@ -1473,6 +1560,7 @@ export default function App() {
           setIsAccountMenuOpen(false);
           handleLogout('switch');
         }}
+        onOpenChangePassword={() => setIsChangePasswordModalOpen(true)}
         onClearFridge={handleClearFridge}
         onDataImported={() => {
           if (currentUser) {
@@ -1489,6 +1577,16 @@ export default function App() {
         favoriteCount={favoriteRecipes.length}
         shoppingCount={shoppingItems.length}
       />
+
+      {/* Ubah Kata Sandi Modal (Sinkron Multi-Device) */}
+      {currentUser && (
+        <ChangePasswordModal
+          currentUser={currentUser}
+          isOpen={isChangePasswordModalOpen}
+          onClose={() => setIsChangePasswordModalOpen(false)}
+          onSuccess={(msg) => showToast(msg)}
+        />
+      )}
 
       {/* Footer */}
       <footer className="mt-12 border-t border-stone-200 bg-white py-8">

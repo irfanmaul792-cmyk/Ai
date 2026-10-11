@@ -86,6 +86,45 @@ class DatabaseService {
     } catch (err) {
       console.warn('Failed to clean up legacy data in localStorage:', err);
     }
+
+    // Synchronize accounts from central server (Multi-Device Sync)
+    this.syncWithServer();
+  }
+
+  /**
+   * Pull latest users and current user data from server
+   */
+  public async syncWithServer(): Promise<void> {
+    if (typeof window === 'undefined') return;
+    try {
+      const res = await fetch('/api/auth/users');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.users)) {
+          const localUsers = this.getUsers();
+          const userMap = new Map<string, User>();
+          localUsers.forEach(u => userMap.set(u.id, u));
+          data.users.forEach((u: User) => userMap.set(u.id, u));
+          const merged = Array.from(userMap.values());
+          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged));
+        }
+      }
+
+      // Sync active user data from server if available
+      const currentId = localStorage.getItem(CURRENT_USER_KEY);
+      if (currentId) {
+        const dataRes = await fetch(`/api/user-data/${currentId}`);
+        if (dataRes.ok) {
+          const dataJson = await dataRes.json();
+          if (dataJson.data && Array.isArray(dataJson.data.ingredients)) {
+            this.memoryCache.set(currentId, dataJson.data);
+            localStorage.setItem(`${DATA_PREFIX}${currentId}`, JSON.stringify(dataJson.data));
+          }
+        }
+      }
+    } catch (err) {
+      // Offline fallback - ignore
+    }
   }
 
   /**
@@ -133,6 +172,7 @@ class DatabaseService {
 
   /**
    * Register a new user account with completely empty fridge
+   * Saves to server for multi-device support + local cache
    */
   public async registerUser(
     name: string,
@@ -141,12 +181,49 @@ class DatabaseService {
     avatar: string = '🍳'
   ): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
-      const users = this.getUsers();
       const normalizedEmail = email.trim().toLowerCase();
+      const trimmedName = name.trim();
 
-      // Check duplicate email
-      if (users.some(u => u.email.toLowerCase() === normalizedEmail)) {
-        return { success: false, error: 'Email atau username ini sudah terdaftar. Silakan login atau gunakan nama lain.' };
+      // 1. Try registering on central server for multi-device access
+      try {
+        const resp = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: trimmedName, email: normalizedEmail, password, avatar })
+        });
+
+        if (resp.ok) {
+          const result = await resp.json();
+          if (result.success && result.user) {
+            const serverUser: User = result.user;
+            const users = this.getUsers();
+            if (!users.some(u => u.id === serverUser.id)) {
+              users.push(serverUser);
+              localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+            }
+            if (result.accountData) {
+              this.memoryCache.set(serverUser.id, result.accountData);
+              localStorage.setItem(`${DATA_PREFIX}${serverUser.id}`, JSON.stringify(result.accountData));
+            }
+            const passwordHash = await hashPassword(password);
+            localStorage.setItem(`kulkas_db_auth_${serverUser.id}`, passwordHash);
+            this.setCurrentUser(serverUser.id);
+            return { success: true, user: serverUser };
+          }
+        } else {
+          const errData = await resp.json().catch(() => ({}));
+          if (errData.error) {
+            return { success: false, error: errData.error };
+          }
+        }
+      } catch (netErr) {
+        console.warn('Central server register failed, falling back to local DB:', netErr);
+      }
+
+      // 2. Local fallback registration
+      const users = this.getUsers();
+      if (users.some(u => u.email.toLowerCase() === normalizedEmail || u.name.toLowerCase() === trimmedName.toLowerCase())) {
+        return { success: false, error: 'Email atau nama ini sudah terdaftar. Silakan login atau gunakan nama lain.' };
       }
 
       const id = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -154,23 +231,19 @@ class DatabaseService {
 
       const newUser: User = {
         id,
-        name: name.trim(),
+        name: trimmedName,
         email: normalizedEmail,
         avatar,
         createdAt: Date.now(),
         lastLoginAt: Date.now()
       };
 
-      // Save password hash alongside user
       users.push(newUser);
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
       localStorage.setItem(`kulkas_db_auth_${id}`, passwordHash);
 
-      // Create completely EMPTY fridge for this new account
       const emptyData = createEmptyAccountData(id);
       this.saveUserData(id, emptyData);
-
-      // Set as active user
       this.setCurrentUser(id);
 
       return { success: true, user: newUser };
@@ -181,24 +254,71 @@ class DatabaseService {
 
   /**
    * Login with email or name and password
+   * Checks central server first (allows logging in from HP 2 using account made on HP 1)
    */
   public async loginUser(
     emailOrName: string,
     password: string
   ): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
+      const query = emailOrName.trim();
+
+      // 1. Try central server login (enables multi-device cross-login)
+      try {
+        const resp = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ emailOrName: query, password })
+        });
+
+        if (resp.ok) {
+          const result = await resp.json();
+          if (result.success && result.user) {
+            const serverUser: User = result.user;
+            // Update local user list
+            const users = this.getUsers();
+            const existingIdx = users.findIndex(u => u.id === serverUser.id);
+            if (existingIdx >= 0) {
+              users[existingIdx] = serverUser;
+            } else {
+              users.push(serverUser);
+            }
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+
+            // Cache password and account data
+            const passwordHash = await hashPassword(password);
+            localStorage.setItem(`kulkas_db_auth_${serverUser.id}`, passwordHash);
+            if (result.accountData) {
+              this.memoryCache.set(serverUser.id, result.accountData);
+              localStorage.setItem(`${DATA_PREFIX}${serverUser.id}`, JSON.stringify(result.accountData));
+            }
+
+            this.setCurrentUser(serverUser.id);
+            return { success: true, user: serverUser };
+          }
+        } else {
+          const errData = await resp.json().catch(() => ({}));
+          if (errData.error) {
+            return { success: false, error: errData.error };
+          }
+        }
+      } catch (netErr) {
+        console.warn('Central server login unavailable, trying local database:', netErr);
+      }
+
+      // 2. Local database fallback
       const users = this.getUsers();
-      const query = emailOrName.trim().toLowerCase();
+      const norm = query.toLowerCase();
       const user = users.find(u => 
-        u.email.toLowerCase() === query || 
-        u.name.toLowerCase() === query
+        u.email.toLowerCase() === norm || 
+        u.name.toLowerCase() === norm
       );
 
       if (!user) {
         return { success: false, error: 'Akun dengan email/nama ini tidak ditemukan. Silakan periksa kembali atau buat akun baru.' };
       }
 
-      // Check password if stored
+      // Check password if stored locally
       const storedHash = localStorage.getItem(`kulkas_db_auth_${user.id}`);
       if (storedHash) {
         const inputHash = await hashPassword(password);
@@ -207,12 +327,52 @@ class DatabaseService {
         }
       }
 
-      // Set active user
       this.setCurrentUser(user.id);
-
       return { success: true, user };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Gagal masuk akun.' };
+    }
+  }
+
+  /**
+   * Change password for user (updates on central server and local device)
+   */
+  public async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      // 1. Try updating on central server
+      try {
+        const resp = await fetch('/api/auth/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, oldPassword, newPassword })
+        });
+
+        if (!resp.ok) {
+          const errData = await resp.json().catch(() => ({}));
+          return { success: false, error: errData.error || 'Gagal mengubah kata sandi di server.' };
+        }
+      } catch (netErr) {
+        console.warn('Server change-password failed, updating local storage:', netErr);
+        // Verify local password
+        const storedHash = localStorage.getItem(`kulkas_db_auth_${userId}`);
+        if (storedHash && oldPassword) {
+          const oldHash = await hashPassword(oldPassword);
+          if (storedHash !== oldHash) {
+            return { success: false, error: 'Kata sandi lama tidak cocok.' };
+          }
+        }
+      }
+
+      // 2. Update local password hash
+      const newHash = await hashPassword(newPassword);
+      localStorage.setItem(`kulkas_db_auth_${userId}`, newHash);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Gagal memperbarui kata sandi.' };
     }
   }
 
@@ -296,6 +456,15 @@ class DatabaseService {
       localStorage.setItem(`${DATA_PREFIX}${userId}`, JSON.stringify(updated));
     } catch (err) {
       console.warn(`Error saving data for user ${userId} to localStorage:`, err);
+    }
+
+    // Sync to server for multi-device cross updates
+    if (typeof window !== 'undefined') {
+      fetch(`/api/user-data/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: updated })
+      }).catch(() => {});
     }
   }
 

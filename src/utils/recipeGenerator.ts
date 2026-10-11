@@ -400,5 +400,122 @@ export function generateDynamicRecipes({
     theme: 'saute'
   });
 
+  // =========================================================================
+  // RECIPE 5: NASI GORENG / OLAHAN KARBO SPESIAL BUMBU IRIS
+  // =========================================================================
+  const fifthItem = primaryItem1;
+  const isRicePresent = matchedCarbs.some(c => c.toLowerCase().includes('nasi') || c.toLowerCase().includes('rice'));
+  const carboName = isRicePresent ? 'Nasi Putih' : 'Nasi / Karbohidrat Pilihan';
+  dynamicRecipes.push({
+    id: `dyn-nasgor-${Date.now()}-5`,
+    title: `Nasi Goreng ${fifthItem} Bumbu Rawit Bawang`,
+    description: `Nasi goreng harum beraroma smoky dengan potongan ${fifthItem}, bumbu iris bawang melimpah, dan sensasi pedas gurih nagih.`,
+    matchPercentage: 94,
+    prepTimeMinutes: 5,
+    cookTimeMinutes: 10,
+    totalTimeMinutes: 15,
+    difficulty: 'Praktis',
+    estimatedCost: 'Rp 18.000 / porsi',
+    calories: 480,
+    servings: servingsNum,
+    urgencyMessage: 'Menu cepat saji 15 menit menggunakan stok bahan dapur yang ada.',
+    ingredients: [
+      { name: fifthItem, amount: 'Secukupnya (potong kecil)', isOwned: true, urgentPriority: true },
+      { name: carboName, amount: `${servingsNum} porsi`, isOwned: true },
+      { name: 'Bawang merah & putih', amount: '4 siung (iris)', isOwned: true },
+      { name: 'Cabai rawit merah', amount: isPedas ? '5 buah (iris)' : '2 buah', isOwned: true },
+      { name: 'Kecap manis & saus tiram', amount: 'Masing-masing 1 sdm', isOwned: true },
+      { name: 'Minyak / margarin', amount: '2 sdm', isOwned: true },
+      { name: 'Garam & lada', amount: 'Secukupnya', isOwned: true }
+    ],
+    steps: [
+      {
+        step: 1,
+        instruction: 'Panaskan wajan dengan minyak atau margarin. Tumis irisan bawang dan cabai rawit hingga wangi kekuningan.',
+        durationMinutes: 2
+      },
+      {
+        step: 2,
+        instruction: `Masukkan ${fifthItem}, tumis cepat dengan api sedang hingga matang merata dan mengeluarkan aroma harum.`,
+        durationMinutes: 3
+      },
+      {
+        step: 3,
+        instruction: 'Masukkan nasi atau karbohidrat. Bumbui dengan kecap manis, saus tiram, garam, dan lada bubuk.',
+        durationMinutes: 2
+      },
+      {
+        step: 4,
+        instruction: 'Aduk cepat dengan api besar hingga bumbu merata dan nasi berbutir kering sedap. Sajikan selagi hangat.',
+        durationMinutes: 3
+      }
+    ],
+    nutrition: {
+      calories: 480,
+      protein: '22g',
+      carbs: '60g',
+      fat: '16g'
+    },
+    tasteProfile: ['Pedas Gurih Bawang', 'Smoky Wajan', 'Kenyang Mantap'],
+    theme: 'stirfry'
+  });
+
+  // =========================================================================
+  // RECIPE 6: BALADO / GURIH MANIS PEDAS NUSANTARA
+  // =========================================================================
+  const sixthItem = primaryItem3 || primaryItem2 || primaryItem1;
+  dynamicRecipes.push({
+    id: `dyn-balado-${Date.now()}-6`,
+    title: `${sixthItem} Masak Balado Merah Gurih Segar`,
+    description: `Kreasi masakan khas Nusantara memadukan ${sixthItem} berbalut bumbu balado tomat cabai merah yang gurih, manis, dan pedas seimbang.`,
+    matchPercentage: 92,
+    prepTimeMinutes: 7,
+    cookTimeMinutes: 13,
+    totalTimeMinutes: 20,
+    difficulty: 'Mudah',
+    estimatedCost: 'Rp 20.000 / porsi',
+    calories: 340,
+    servings: servingsNum,
+    urgencyMessage: 'Cita rasa tradisional nusantara yang lezat dan cocok untuk lauk harian.',
+    ingredients: [
+      { name: sixthItem, amount: 'Secukupnya stok', isOwned: true, urgentPriority: true },
+      { name: 'Tomat merah segar', amount: '1-2 buah (cincang kasar)', isOwned: true },
+      { name: 'Cabai merah & rawit', amount: isPedas ? '6 buah (haluskan kasar)' : '3 buah', isOwned: true },
+      { name: 'Bawang merah & putih', amount: '4 siung', isOwned: true },
+      { name: 'Gula merah / pasir & garam', amount: 'Secukupnya', isOwned: true },
+      { name: 'Minyak goreng', amount: '2 sdm', isOwned: true }
+    ],
+    steps: [
+      {
+        step: 1,
+        instruction: `Goreng atau tumis sebentar ${sixthItem} hingga berkulit dan tiriskan.`,
+        durationMinutes: 4
+      },
+      {
+        step: 2,
+        instruction: 'Tumis cabai, bawang, dan tomat yang dicincang kasar hingga matang berminyak dan tidak langu.',
+        durationMinutes: 5
+      },
+      {
+        step: 3,
+        instruction: 'Bumbui sambal balado dengan garam dan gula merah hingga rasa gurih pedas manisnya pas seimbang.',
+        durationMinutes: 2
+      },
+      {
+        step: 4,
+        instruction: `Masukkan ${sixthItem}, aduk rata dengan sambal balado di atas api kecil selama 2 menit. Angkat dan sajikan.`,
+        durationMinutes: 2
+      }
+    ],
+    nutrition: {
+      calories: 340,
+      protein: '24g',
+      carbs: '18g',
+      fat: '18g'
+    },
+    tasteProfile: ['Pedas Manis Gurih', 'Tomat Segar', 'Khas Nusantara'],
+    theme: 'spicy'
+  });
+
   return dynamicRecipes;
 }

@@ -1,6 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, Type } from '@google/genai';
 
@@ -12,9 +14,226 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
+// Central Multi-Device Database File Storage
+const DB_DIR = path.join(__dirname, 'data');
+const DB_FILE = path.join(DB_DIR, 'kulkas_central_db.json');
+
+interface CentralDbSchema {
+  users: Array<{
+    id: string;
+    name: string;
+    email: string;
+    avatar: string;
+    createdAt: number;
+    lastLoginAt: number;
+  }>;
+  passwords: Record<string, string>; // userId -> passwordHash (SHA-256)
+  userData: Record<string, any>;     // userId -> UserAccountData
+}
+
+function initCentralDb(): CentralDbSchema {
+  try {
+    if (!fs.existsSync(DB_DIR)) {
+      fs.mkdirSync(DB_DIR, { recursive: true });
+    }
+    if (fs.existsSync(DB_FILE)) {
+      const raw = fs.readFileSync(DB_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      return {
+        users: Array.isArray(parsed.users) ? parsed.users : [],
+        passwords: parsed.passwords || {},
+        userData: parsed.userData || {}
+      };
+    }
+  } catch (err) {
+    console.error('Failed reading central db, initializing fresh:', err);
+  }
+  const initial: CentralDbSchema = { users: [], passwords: {}, userData: {} };
+  saveCentralDb(initial);
+  return initial;
+}
+
+function saveCentralDb(data: CentralDbSchema): void {
+  try {
+    if (!fs.existsSync(DB_DIR)) {
+      fs.mkdirSync(DB_DIR, { recursive: true });
+    }
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Failed writing central db:', err);
+  }
+}
+
+function hashPasswordServer(plain: string): string {
+  return crypto.createHash('sha256').update(plain).digest('hex');
+}
+
 // Support high-resolution camera / photo uploads
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// =========================================================================
+// CENTRAL AUTH & DATABASE SYNC API (Multi-Device Sync Across HP / Laptops)
+// =========================================================================
+
+app.get('/api/auth/users', (_req, res) => {
+  const db = initCentralDb();
+  res.json({ users: db.users });
+});
+
+app.post('/api/auth/register', (req, res) => {
+  try {
+    const { name, email, password, avatar } = req.body;
+    if (!name || !email) {
+      return res.status(400).json({ error: 'Nama dan email wajib diisi.' });
+    }
+    const db = initCentralDb();
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedName = name.trim().toLowerCase();
+
+    const existing = db.users.find(u => 
+      u.email.toLowerCase() === normalizedEmail || 
+      u.name.toLowerCase() === normalizedName
+    );
+    if (existing) {
+      return res.status(400).json({ error: 'Akun dengan email atau nama ini sudah terdaftar. Silakan masuk atau gunakan nama lain.' });
+    }
+
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const passHash = hashPasswordServer(password || 'default');
+
+    const newUser = {
+      id: userId,
+      name: name.trim(),
+      email: normalizedEmail,
+      avatar: avatar || '👨‍🍳',
+      createdAt: Date.now(),
+      lastLoginAt: Date.now()
+    };
+
+    db.users.push(newUser);
+    db.passwords[userId] = passHash;
+    const initialAccountData = {
+      userId,
+      ingredients: [],
+      selectedFridgeIds: {},
+      shoppingItems: [],
+      favoriteRecipes: [],
+      filters: {
+        budget: 'Bebas',
+        cookingTime: 'Maks. 30 menit',
+        servings: '2',
+        preferences: 'suka pedas'
+      },
+      photos: [],
+      updatedAt: Date.now()
+    };
+    db.userData[userId] = initialAccountData;
+    saveCentralDb(db);
+
+    return res.json({ success: true, user: newUser, accountData: initialAccountData });
+  } catch (err) {
+    return res.status(500).json({ error: 'Gagal membuat akun di server.' });
+  }
+});
+
+app.post('/api/auth/login', (req, res) => {
+  try {
+    const { emailOrName, password } = req.body;
+    if (!emailOrName) {
+      return res.status(400).json({ error: 'Email atau username akun wajib diisi.' });
+    }
+    const db = initCentralDb();
+    const query = emailOrName.trim().toLowerCase();
+    const user = db.users.find(u => 
+      u.email.toLowerCase() === query || 
+      u.name.toLowerCase() === query
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'Akun tidak ditemukan. Silakan periksa kembali atau buat akun baru.' });
+    }
+
+    const storedHash = db.passwords[user.id];
+    if (storedHash) {
+      const inputHash = hashPasswordServer(password || 'default');
+      if (storedHash !== inputHash) {
+        return res.status(401).json({ error: 'Kata sandi / PIN tidak cocok. Silakan coba lagi.' });
+      }
+    }
+
+    // Update last login
+    user.lastLoginAt = Date.now();
+    saveCentralDb(db);
+
+    const accountData = db.userData[user.id] || {
+      userId: user.id,
+      ingredients: [],
+      selectedFridgeIds: {},
+      shoppingItems: [],
+      favoriteRecipes: [],
+      filters: { budget: 'Bebas', cookingTime: 'Maks. 30 menit', servings: '2', preferences: 'suka pedas' },
+      photos: [],
+      updatedAt: Date.now()
+    };
+
+    return res.json({ success: true, user, accountData });
+  } catch (err) {
+    return res.status(500).json({ error: 'Gagal masuk akun di server.' });
+  }
+});
+
+app.post('/api/auth/change-password', (req, res) => {
+  try {
+    const { userId, oldPassword, newPassword } = req.body;
+    if (!userId || !newPassword) {
+      return res.status(400).json({ error: 'User ID dan kata sandi baru wajib disertakan.' });
+    }
+    const db = initCentralDb();
+    const user = db.users.find(u => u.id === userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Akun tidak ditemukan di database server.' });
+    }
+
+    const storedHash = db.passwords[userId];
+    if (storedHash && oldPassword) {
+      const oldHash = hashPasswordServer(oldPassword);
+      if (storedHash !== oldHash) {
+        return res.status(401).json({ error: 'Kata sandi lama tidak cocok. Silakan masukkan kata sandi lama yang benar.' });
+      }
+    }
+
+    // Update to new password
+    db.passwords[userId] = hashPasswordServer(newPassword);
+    saveCentralDb(db);
+
+    return res.json({ success: true, message: 'Kata sandi berhasil diperbarui.' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Gagal merubah kata sandi di server.' });
+  }
+});
+
+app.get('/api/user-data/:userId', (req, res) => {
+  const { userId } = req.params;
+  const db = initCentralDb();
+  const data = db.userData[userId] || null;
+  res.json({ data });
+});
+
+app.post('/api/user-data/:userId', (req, res) => {
+  const { userId } = req.params;
+  const { data } = req.body;
+  if (!data) return res.status(400).json({ error: 'Data tidak boleh kosong' });
+
+  const db = initCentralDb();
+  db.userData[userId] = {
+    ...data,
+    userId,
+    updatedAt: Date.now()
+  };
+  saveCentralDb(db);
+  res.json({ success: true });
+});
 
 /**
  * Returns an instance of GoogleGenAI using the server-side environment key.
@@ -260,7 +479,7 @@ Pengguna ingin memasak menggunakan bahan yang saat ini tersedia:
 ${avoidTitles && avoidTitles.length > 0 ? `- HINDARI membuat resep dengan judul berikut (ciptakan kreasi baru yang berbeda): ${avoidTitles.join(', ')}` : ''}
 
 TUGAS:
-Hasilkan 3 sampai 4 resep masakan Nusantara atau modern fusion yang SANGAT KREATIF, SPESIFIK, dan LEZAT yang menggunakan bahan-bahan di atas.
+Hasilkan 6 resep masakan Nusantara atau modern fusion yang SANGAT KREATIF, SPESIFIK, dan LEZAT yang menggunakan bahan-bahan di atas.
 RESEP HARUS REALISTIS, PRAKTIS, DAN TIDAK MEMBOSANKAN!
 Jika bahan utamanya kangkung dan telur, jadikan menu seperti "Tumis Kangkung Belacan Telur Ceplok" atau "Orak-Arik Kangkung Telur Bumbu Iris".
 Jika bahan utamanya daging sapi dan sayur, ciptakan "Oseng Daging Sapi Bumbu Bawang Rawit" atau "Semur Kilat Daging Wortel Gurih".

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, UserPlus, Users, Shield, Sparkles, ChefHat, CheckCircle2, AlertCircle, Trash2, ArrowRight, Refrigerator } from 'lucide-react';
+import { LogIn, UserPlus, Users, Shield, Sparkles, ChefHat, CheckCircle2, AlertCircle, Trash2, ArrowRight, Refrigerator, Eye, EyeOff } from 'lucide-react';
 import { db } from '../services/db';
 import { User } from '../types';
 
@@ -22,6 +22,8 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [name, setName] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('👨‍🍳');
   const [error, setError] = useState<string | null>(null);
@@ -301,13 +303,23 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
                       <label className="block text-xs font-semibold text-stone-300 mb-1.5">
                         Kata Sandi / PIN (Opsional)
                       </label>
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Kosongkan jika saat daftar tidak memakai sandi"
-                        className="w-full px-4 py-3 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500 placeholder-stone-600"
-                      />
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Kosongkan jika saat daftar tidak memakai sandi"
+                          className="w-full px-4 py-3 pr-11 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500 placeholder-stone-600 font-mono tracking-wider"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-200 p-1 rounded-lg transition-colors cursor-pointer"
+                          title={showPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
 
                     <button
@@ -396,13 +408,23 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
                     <label className="block text-xs font-semibold text-stone-300 mb-1.5">
                       4. Kata Sandi / PIN (Opsional)
                     </label>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Bisa dikosongkan jika tidak butuh kata sandi"
-                      className="w-full px-4 py-3 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500 placeholder-stone-600"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showRegisterPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Bisa dikosongkan jika tidak butuh kata sandi"
+                        className="w-full px-4 py-3 pr-11 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500 placeholder-stone-600 font-mono tracking-wider"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-200 p-1 rounded-lg transition-colors cursor-pointer"
+                        title={showRegisterPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
+                      >
+                        {showRegisterPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Submit Button */}
