@@ -1504,7 +1504,7 @@ export default function App() {
               <div className="bg-emerald-900/60 p-4 rounded-2xl border border-emerald-800">
                 <span className="text-xs font-bold text-amber-300 block">🥫 Saus & Pasta</span>
                 <span className="text-[11px] text-emerald-200 mt-1 block">
-                  Saus Prego yang sudah dibuka wajib disimpan di kulkas rak atas dan dihabiskan dalam 5-7 hari.
+                  Saus Prego yang sudah dibuka sebaiknya disimpan di kulkas rak atas dan dihabiskan dalam 5-7 hari.
                 </span>
               </div>
             </div>
@@ -1562,6 +1562,15 @@ export default function App() {
         }}
         onOpenChangePassword={() => setIsChangePasswordModalOpen(true)}
         onClearFridge={handleClearFridge}
+        onDeleteAccount={() => {
+          if (currentUser) {
+            const userName = currentUser.name;
+            const userId = currentUser.id;
+            db.deleteUser(userId);
+            showToast(`Akun "${userName}" berhasil dihapus.`);
+            handleLogout('switch');
+          }
+        }}
         onDataImported={() => {
           if (currentUser) {
             const data = db.getUserData(currentUser.id);

@@ -12,6 +12,7 @@ interface AccountMenuModalProps {
   onClearFridge: () => void;
   onDataImported: () => void;
   onLogout: () => void;
+  onDeleteAccount?: () => void;
   ingredientCount: number;
   favoriteCount: number;
   shoppingCount: number;
@@ -26,11 +27,13 @@ export const AccountMenuModal: React.FC<AccountMenuModalProps> = ({
   onClearFridge,
   onDataImported,
   onLogout,
+  onDeleteAccount,
   ingredientCount,
   favoriteCount,
   shoppingCount,
 }) => {
   const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [copiedBackup, setCopiedBackup] = useState(false);
 
@@ -252,6 +255,50 @@ export const AccountMenuModal: React.FC<AccountMenuModalProps> = ({
               <span className="text-stone-300 text-xs">Pilih File</span>
               <input type="file" accept=".json" onChange={handleFileUpload} className="hidden" />
             </label>
+
+            {/* Hapus Akun Ini dari Perangkat */}
+            {!confirmDeleteAccount ? (
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteAccount(true)}
+                className="w-full p-3 rounded-2xl bg-stone-950 hover:bg-rose-950/30 border border-stone-800 hover:border-rose-900/50 transition-all flex items-center justify-between text-left text-xs text-stone-200 cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Trash2 className="w-4 h-4 text-rose-500" />
+                  <div>
+                    <span className="font-semibold block text-rose-300">Hapus Akun Ini dari Perangkat</span>
+                    <span className="text-[11px] text-stone-400">Hapus profil {currentUser.name} beserta seluruh datanya di HP ini</span>
+                  </div>
+                </div>
+                <span className="text-rose-400 text-xs font-semibold">Hapus &rarr;</span>
+              </button>
+            ) : (
+              <div className="p-3.5 rounded-2xl bg-rose-950/60 border border-rose-800 space-y-2.5">
+                <p className="text-xs text-rose-200 font-medium">
+                  Yakin ingin menghapus akun <strong>&quot;{currentUser.name}&quot;</strong> dari perangkat ini? Data kulkas akun ini akan dihapus permanen.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onDeleteAccount?.();
+                      setConfirmDeleteAccount(false);
+                      onClose();
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs cursor-pointer shadow-md"
+                  >
+                    Ya, Hapus Akun Ini
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteAccount(false)}
+                    className="px-3 py-1.5 rounded-xl bg-stone-800 text-stone-300 text-xs hover:bg-stone-700 cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

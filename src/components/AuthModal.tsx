@@ -72,13 +72,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     e.preventDefault();
     setError(null);
     setSuccess(null);
-    if (!email) {
+    if (!email.trim()) {
       setError('Masukkan email atau nama akun Anda.');
+      return;
+    }
+    if (!password.trim()) {
+      setError('Kata sandi harus diisi untuk masuk ke akun Anda.');
       return;
     }
 
     setLoading(true);
-    const res = await db.loginUser(email, password || 'default');
+    const res = await db.loginUser(email.trim(), password.trim());
     setLoading(false);
 
     if (res.success && res.user) {
@@ -88,7 +92,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onClose();
       }, 700);
     } else {
-      setError(res.error || 'Gagal masuk. Periksa kembali akun Anda.');
+      setError(res.error || 'Gagal masuk. Periksa kembali akun atau kata sandi Anda.');
     }
   };
 
@@ -97,17 +101,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setError(null);
     setSuccess(null);
 
-    if (!name.trim()) {
-      setError('Nama lengkap / nama dapur wajib diisi.');
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedName) {
+      setError('Nama lengkap / nama dapur harus diisi.');
       return;
     }
-    if (!email.trim()) {
-      setError('Email atau ID pengguna wajib diisi.');
+    if (!trimmedEmail) {
+      setError('Email atau ID pengguna harus diisi.');
+      return;
+    }
+
+    // Pengecekan kata sandi
+    if (!trimmedPassword) {
+      setError('Kata sandi harus dibuat agar akun Anda aman dan bisa login di HP lain.');
+      return;
+    }
+    if (trimmedPassword.length < 4) {
+      setError('Kata sandi minimal 4 karakter atau angka PIN.');
+      return;
+    }
+
+    // Pengecekan duplikasi Email atau ID
+    const normalizedEmail = trimmedEmail.toLowerCase();
+    const isAlreadyUsed = allUsers.some(u => 
+      u.email.toLowerCase() === normalizedEmail || 
+      u.name.toLowerCase() === normalizedEmail
+    );
+
+    if (isAlreadyUsed) {
+      setError(`Email atau ID "${trimmedEmail}" sudah digunakan oleh akun lain. Silakan gunakan email atau ID yang lain.`);
       return;
     }
 
     setLoading(true);
-    const res = await db.registerUser(name, email, password || 'default', selectedAvatar);
+    const res = await db.registerUser(trimmedName, trimmedEmail, trimmedPassword, selectedAvatar);
     setLoading(false);
 
     if (res.success && res.user) {
@@ -117,7 +147,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onClose();
       }, 800);
     } else {
-      setError(res.error || 'Gagal mendaftar akun.');
+      setError(res.error || `Email atau ID "${trimmedEmail}" sudah digunakan. Silakan gunakan email atau ID lain.`);
     }
   };
 
@@ -280,10 +310,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <button
                           type="button"
                           onClick={(e) => handleDeleteAccount(u.id, u.name, e)}
-                          className="p-1.5 rounded-lg text-stone-500 hover:text-rose-400 hover:bg-stone-800/80 transition-colors cursor-pointer"
-                          title={`Hapus Akun ${u.name}`}
+                          className="px-2.5 py-1.5 rounded-xl text-stone-400 hover:text-rose-300 hover:bg-rose-950/60 border border-stone-800 hover:border-rose-800/60 transition-all cursor-pointer flex items-center gap-1.5 text-xs"
+                          title={`Hapus akun "${u.name}" dari perangkat`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                          <span className="hidden sm:inline">Hapus</span>
                         </button>
                         <button
                           type="button"
@@ -354,7 +385,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <div>
               <label className="block text-xs font-medium text-stone-300 mb-1.5">
-                Nama Akun / Nama Dapur
+                Nama Akun / Nama Dapur <span className="text-rose-400 font-bold">*</span>
               </label>
               <input
                 type="text"
@@ -368,7 +399,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <div>
               <label className="block text-xs font-medium text-stone-300 mb-1.5">
-                Email / ID Akun
+                Email / ID Akun <span className="text-rose-400 font-bold">*</span>
               </label>
               <input
                 type="text"
@@ -382,15 +413,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <div>
               <label className="block text-xs font-medium text-stone-300 mb-1.5">
-                Kata Sandi / PIN (Opsional)
+                Kata Sandi / PIN Akun <span className="text-rose-400 font-bold">*</span>
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Kosongkan jika tidak butuh sandi"
+                  placeholder="Minimal 4 karakter"
                   className="w-full px-4 py-2.5 pr-11 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500 font-mono tracking-wider"
+                  required
+                  minLength={4}
                 />
                 <button
                   type="button"
@@ -401,6 +434,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              <p className="text-[11px] text-stone-400 mt-1">
+                🔒 Dibuat untuk keamanan akun dan login di perangkat lain.
+              </p>
             </div>
 
             {/* Tombol Selesai Daftar Akun */}
@@ -435,7 +471,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-stone-300 mb-1.5">
-                Email atau Username Akun
+                Email atau Username Akun <span className="text-rose-400 font-bold">*</span>
               </label>
               <input
                 type="text"
@@ -449,15 +485,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
             <div>
               <label className="block text-xs font-medium text-stone-300 mb-1.5">
-                Kata Sandi / PIN
+                Kata Sandi / PIN Akun <span className="text-rose-400 font-bold">*</span>
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Masukkan kata sandi jika ada"
+                  placeholder="Masukkan kata sandi akun"
                   className="w-full px-4 py-2.5 pr-11 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500 font-mono tracking-wider"
+                  required
                 />
                 <button
                   type="button"

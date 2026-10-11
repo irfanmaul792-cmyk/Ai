@@ -43,8 +43,13 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
       return;
     }
 
+    if (!password.trim()) {
+      setError('Kata sandi harus diisi untuk masuk ke akun Anda.');
+      return;
+    }
+
     setLoading(true);
-    const res = await db.loginUser(email.trim(), password || 'default');
+    const res = await db.loginUser(email.trim(), password.trim());
     setLoading(false);
 
     if (res.success && res.user) {
@@ -62,17 +67,43 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
     setError(null);
     setSuccess(null);
 
-    if (!name.trim()) {
-      setError('Nama lengkap atau nama kulkas wajib diisi.');
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedName) {
+      setError('Nama lengkap atau nama kulkas harus diisi.');
       return;
     }
-    if (!email.trim()) {
-      setError('Email atau ID akun wajib diisi.');
+    if (!trimmedEmail) {
+      setError('Email atau ID akun harus diisi.');
+      return;
+    }
+
+    // Pengecekan kata sandi
+    if (!trimmedPassword) {
+      setError('Kata sandi harus dibuat agar akun Anda aman dan dapat login di perangkat lain.');
+      return;
+    }
+    if (trimmedPassword.length < 4) {
+      setError('Kata sandi minimal 4 karakter atau angka PIN.');
+      return;
+    }
+
+    // Pengecekan apakah Email atau ID sudah digunakan
+    const normalizedEmail = trimmedEmail.toLowerCase();
+    const isAlreadyUsed = allUsers.some(u => 
+      u.email.toLowerCase() === normalizedEmail || 
+      u.name.toLowerCase() === normalizedEmail
+    );
+
+    if (isAlreadyUsed) {
+      setError(`Email atau ID "${trimmedEmail}" sudah digunakan oleh akun lain. Silakan gunakan email atau ID yang lain.`);
       return;
     }
 
     setLoading(true);
-    const res = await db.registerUser(name.trim(), email.trim(), password || 'default', selectedAvatar);
+    const res = await db.registerUser(trimmedName, trimmedEmail, trimmedPassword, selectedAvatar);
     setLoading(false);
 
     if (res.success && res.user) {
@@ -81,7 +112,7 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
         onLoginSuccess(res.user!);
       }, 700);
     } else {
-      setError(res.error || 'Gagal mendaftar akun. Silakan coba username lain.');
+      setError(res.error || `Email atau ID "${trimmedEmail}" sudah digunakan. Silakan gunakan email atau ID lain.`);
     }
   };
 
@@ -252,7 +283,7 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
                         Pilih Cepat Akun yang Pernah Digunakan:
                       </span>
                       <div className="grid grid-cols-1 gap-2">
-                        {allUsers.slice(0, 2).map(u => (
+                        {allUsers.slice(0, 3).map(u => (
                           <div
                             key={u.id}
                             onClick={() => handleQuickLogin(u.id)}
@@ -269,9 +300,23 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
                                 <span className="text-[11px] text-stone-400">{u.email}</span>
                               </div>
                             </div>
-                            <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-                              Masuk &rarr;
-                            </span>
+                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeleteAccount(u.id, u.name, e)}
+                                className="p-1.5 rounded-xl text-stone-500 hover:text-rose-400 hover:bg-rose-950/50 border border-transparent hover:border-rose-900/50 transition-colors cursor-pointer"
+                                title={`Hapus akun "${u.name}" dari perangkat`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleQuickLogin(u.id)}
+                                className="text-xs text-emerald-400 font-semibold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
+                              >
+                                Masuk &rarr;
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -287,7 +332,7 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
                   <form onSubmit={handleLogin} className="space-y-4">
                     <div>
                       <label className="block text-xs font-semibold text-stone-300 mb-1.5">
-                        Email atau Username Akun
+                        Email atau Username Akun <span className="text-rose-400 font-bold">*</span>
                       </label>
                       <input
                         type="text"
@@ -300,16 +345,19 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-stone-300 mb-1.5">
-                        Kata Sandi / PIN (Opsional)
-                      </label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-semibold text-stone-300">
+                          Kata Sandi / PIN Akun <span className="text-rose-400 font-bold">*</span>
+                        </label>
+                      </div>
                       <div className="relative">
                         <input
                           type={showPassword ? 'text' : 'password'}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          placeholder="Kosongkan jika saat daftar tidak memakai sandi"
+                          placeholder="Masukkan kata sandi akun Anda"
                           className="w-full px-4 py-3 pr-11 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500 placeholder-stone-600 font-mono tracking-wider"
+                          required
                         />
                         <button
                           type="button"
@@ -378,7 +426,7 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
 
                   <div>
                     <label className="block text-xs font-semibold text-stone-300 mb-1.5">
-                      2. Nama Akun / Nama Dapur <span className="text-emerald-400">*</span>
+                      2. Nama Akun / Nama Dapur <span className="text-rose-400 font-bold">*</span>
                     </label>
                     <input
                       type="text"
@@ -392,7 +440,7 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
 
                   <div>
                     <label className="block text-xs font-semibold text-stone-300 mb-1.5">
-                      3. Email / ID Akun <span className="text-emerald-400">*</span>
+                      3. Email / ID Akun <span className="text-rose-400 font-bold">*</span>
                     </label>
                     <input
                       type="text"
@@ -406,15 +454,17 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
 
                   <div>
                     <label className="block text-xs font-semibold text-stone-300 mb-1.5">
-                      4. Kata Sandi / PIN (Opsional)
+                      4. Buat Kata Sandi / PIN Akun <span className="text-rose-400 font-bold">*</span>
                     </label>
                     <div className="relative">
                       <input
                         type={showRegisterPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Bisa dikosongkan jika tidak butuh kata sandi"
+                        placeholder="Minimal 4 karakter (untuk login di HP lain)"
                         className="w-full px-4 py-3 pr-11 rounded-xl bg-stone-950 border border-stone-800 text-stone-100 text-sm focus:outline-none focus:border-emerald-500 placeholder-stone-600 font-mono tracking-wider"
+                        required
+                        minLength={4}
                       />
                       <button
                         type="button"
@@ -425,6 +475,9 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
                         {showRegisterPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    <p className="text-[11px] text-stone-400 mt-1">
+                      🔒 Dibuat agar akun Anda aman dan dapat digunakan untuk login di HP atau perangkat lain.
+                    </p>
                   </div>
 
                   {/* Submit Button */}
@@ -457,9 +510,14 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
               {/* TAB 3: SWITCH / MANAGE SAVED ACCOUNTS */}
               {mode === 'switch' && (
                 <div className="space-y-3">
-                  <p className="text-xs text-stone-400">
-                    Daftar profil kulkas yang tersimpan di perangkat ini:
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-stone-300">
+                      Kelola & Hapus Akun yang Tersimpan:
+                    </p>
+                    <span className="text-[11px] text-stone-400">
+                      {allUsers.length} akun tersimpan
+                    </span>
+                  </div>
 
                   <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                     {allUsers.map((u) => {
@@ -487,14 +545,15 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                             <button
                               type="button"
                               onClick={(e) => handleDeleteAccount(u.id, u.name, e)}
-                              className="p-2 rounded-xl text-stone-500 hover:text-rose-400 hover:bg-stone-800 transition-colors cursor-pointer"
-                              title={`Hapus Akun ${u.name}`}
+                              className="px-2.5 py-1.5 rounded-xl text-stone-400 hover:text-rose-300 hover:bg-rose-950/60 border border-stone-800 hover:border-rose-800/60 transition-all cursor-pointer flex items-center gap-1.5 text-xs"
+                              title={`Hapus akun "${u.name}" dari perangkat`}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                              <span className="hidden sm:inline">Hapus</span>
                             </button>
                             <button
                               type="button"

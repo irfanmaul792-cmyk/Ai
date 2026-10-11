@@ -87,6 +87,13 @@ app.post('/api/auth/register', (req, res) => {
     if (!name || !email) {
       return res.status(400).json({ error: 'Nama dan email wajib diisi.' });
     }
+
+    if (!password || password.trim().length < 4) {
+      return res.status(400).json({ 
+        error: 'Kata sandi wajib dibuat (minimal 4 karakter) agar akun Anda aman dan bisa login di perangkat lain.' 
+      });
+    }
+
     const db = initCentralDb();
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedName = name.trim().toLowerCase();
@@ -96,11 +103,13 @@ app.post('/api/auth/register', (req, res) => {
       u.name.toLowerCase() === normalizedName
     );
     if (existing) {
-      return res.status(400).json({ error: 'Akun dengan email atau nama ini sudah terdaftar. Silakan masuk atau gunakan nama lain.' });
+      return res.status(400).json({ 
+        error: `Email atau ID "${email.trim()}" sudah digunakan oleh akun lain. Silakan gunakan email atau ID yang lain.` 
+      });
     }
 
     const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const passHash = hashPasswordServer(password || 'default');
+    const passHash = hashPasswordServer(password.trim());
 
     const newUser = {
       id: userId,
@@ -143,6 +152,11 @@ app.post('/api/auth/login', (req, res) => {
     if (!emailOrName) {
       return res.status(400).json({ error: 'Email atau username akun wajib diisi.' });
     }
+
+    if (!password || !password.trim()) {
+      return res.status(400).json({ error: 'Kata sandi wajib diisi untuk masuk ke akun Anda.' });
+    }
+
     const db = initCentralDb();
     const query = emailOrName.trim().toLowerCase();
     const user = db.users.find(u => 
@@ -156,10 +170,14 @@ app.post('/api/auth/login', (req, res) => {
 
     const storedHash = db.passwords[user.id];
     if (storedHash) {
-      const inputHash = hashPasswordServer(password || 'default');
+      const inputHash = hashPasswordServer(password.trim());
       if (storedHash !== inputHash) {
         return res.status(401).json({ error: 'Kata sandi / PIN tidak cocok. Silakan coba lagi.' });
       }
+    } else {
+      // Rekam kata sandi baru untuk akun lama
+      db.passwords[user.id] = hashPasswordServer(password.trim());
+      saveCentralDb(db);
     }
 
     // Update last login

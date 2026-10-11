@@ -183,13 +183,21 @@ class DatabaseService {
     try {
       const normalizedEmail = email.trim().toLowerCase();
       const trimmedName = name.trim();
+      const trimmedPassword = password.trim();
+
+      if (!trimmedPassword || trimmedPassword.length < 4) {
+        return { 
+          success: false, 
+          error: 'Kata sandi harus dibuat (minimal 4 karakter) agar akun Anda aman dan bisa login di perangkat lain.' 
+        };
+      }
 
       // 1. Try registering on central server for multi-device access
       try {
         const resp = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: trimmedName, email: normalizedEmail, password, avatar })
+          body: JSON.stringify({ name: trimmedName, email: normalizedEmail, password: trimmedPassword, avatar })
         });
 
         if (resp.ok) {
@@ -205,7 +213,7 @@ class DatabaseService {
               this.memoryCache.set(serverUser.id, result.accountData);
               localStorage.setItem(`${DATA_PREFIX}${serverUser.id}`, JSON.stringify(result.accountData));
             }
-            const passwordHash = await hashPassword(password);
+            const passwordHash = await hashPassword(trimmedPassword);
             localStorage.setItem(`kulkas_db_auth_${serverUser.id}`, passwordHash);
             this.setCurrentUser(serverUser.id);
             return { success: true, user: serverUser };
@@ -223,11 +231,14 @@ class DatabaseService {
       // 2. Local fallback registration
       const users = this.getUsers();
       if (users.some(u => u.email.toLowerCase() === normalizedEmail || u.name.toLowerCase() === trimmedName.toLowerCase())) {
-        return { success: false, error: 'Email atau nama ini sudah terdaftar. Silakan login atau gunakan nama lain.' };
+        return { 
+          success: false, 
+          error: `Email atau ID "${email.trim()}" sudah digunakan oleh akun lain. Silakan gunakan email atau ID yang lain.` 
+        };
       }
 
       const id = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-      const passwordHash = await hashPassword(password);
+      const passwordHash = await hashPassword(trimmedPassword);
 
       const newUser: User = {
         id,
@@ -262,6 +273,11 @@ class DatabaseService {
   ): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
       const query = emailOrName.trim();
+      const trimmedPassword = password.trim();
+
+      if (!trimmedPassword) {
+        return { success: false, error: 'Kata sandi harus diisi untuk masuk ke akun Anda.' };
+      }
 
       // 1. Try central server login (enables multi-device cross-login)
       try {
