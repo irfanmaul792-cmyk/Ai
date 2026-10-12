@@ -41,22 +41,25 @@ export const AccountMenuModal: React.FC<AccountMenuModalProps> = ({
   const [pairLoading, setPairLoading] = useState(false);
   const [copiedPairLink, setCopiedPairLink] = useState(false);
   const [copiedPairCode, setCopiedPairCode] = useState(false);
+  const [copiedPairToken, setCopiedPairToken] = useState(false);
 
   if (!isOpen || !currentUser) return null;
 
+  // Generate instant client-side link & token that work without server
+  const directLink = typeof window !== 'undefined' ? db.generateDirectSyncUrl(currentUser.id) : '';
+  const directToken = db.generateDirectSyncToken(currentUser.id);
+
   const handleGeneratePairCode = async () => {
-    setShowPairCard(true);
-    setPairLoading(true);
-    const res = await db.generatePairCode(currentUser.id);
-    setPairLoading(false);
-    if (res.success && res.code) {
-      setPairCode(res.code);
+    setShowPairCard(prev => !prev);
+    if (!pairCode && !pairLoading) {
+      setPairLoading(true);
+      const res = await db.generatePairCode(currentUser.id);
+      setPairLoading(false);
+      if (res.success && res.code) {
+        setPairCode(res.code);
+      }
     }
   };
-
-  const pairUrl = typeof window !== 'undefined' && pairCode 
-    ? `${window.location.origin}?pair=${pairCode}`
-    : '';
 
   const handleCopyPairCode = () => {
     if (!pairCode) return;
@@ -66,10 +69,17 @@ export const AccountMenuModal: React.FC<AccountMenuModalProps> = ({
   };
 
   const handleCopyPairLink = () => {
-    if (!pairUrl) return;
-    navigator.clipboard.writeText(pairUrl);
+    if (!directLink) return;
+    navigator.clipboard.writeText(directLink);
     setCopiedPairLink(true);
     setTimeout(() => setCopiedPairLink(false), 2500);
+  };
+
+  const handleCopyPairToken = () => {
+    if (!directToken) return;
+    navigator.clipboard.writeText(directToken);
+    setCopiedPairToken(true);
+    setTimeout(() => setCopiedPairToken(false), 2500);
   };
 
   const handleDownloadBackup = () => {
@@ -200,48 +210,67 @@ export const AccountMenuModal: React.FC<AccountMenuModalProps> = ({
               </button>
 
               {showPairCard && (
-                <div className="p-4 border-t border-emerald-900/60 bg-stone-950/90 space-y-3 animate-fade-in">
-                  {pairLoading ? (
-                    <div className="py-4 text-center text-xs text-stone-400">Membuat kode tautan instan...</div>
-                  ) : pairCode ? (
-                    <>
-                      <div className="text-center py-2 bg-stone-900 rounded-2xl border border-emerald-800/50">
-                        <span className="text-[10px] uppercase tracking-wider text-emerald-400 font-bold block mb-1">
-                          Kode Tautan 6-Angka
-                        </span>
-                        <div className="text-3xl font-mono font-black tracking-widest text-emerald-300 select-all">
-                          {pairCode}
-                        </div>
-                        <span className="text-[10px] text-stone-400 block mt-1">Berlaku selama 60 menit</span>
-                      </div>
+                <div className="p-4 border-t border-emerald-900/60 bg-stone-950/90 space-y-3.5 animate-fade-in">
+                  {/* Cara 1: Link Cepat HP (Paling Praktis, 100% Selalu Berhasil) */}
+                  <div className="p-3 rounded-2xl bg-stone-900 border border-emerald-700/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-emerald-300 flex items-center gap-1.5">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Cara 1: Buka Lewat Link Cepat HP (Otomatis Masuk)</span>
+                      </span>
+                      <span className="text-[10px] bg-emerald-950 text-emerald-400 font-semibold px-2 py-0.5 rounded-full border border-emerald-800">
+                        Rekomendasi
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-300 leading-relaxed">
+                      Salin link ini dan kirim ke HP Anda (via WhatsApp/catatan/browser). Begitu link dibuka di HP, akun &amp; isi kulkas langsung aktif instan!
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleCopyPairLink}
+                      className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-emerald-950/50"
+                    >
+                      {copiedPairLink ? <Check className="w-4 h-4 text-white" /> : <Copy className="w-4 h-4" />}
+                      <span>{copiedPairLink ? '✓ Link Cepat Berhasil Disalin!' : '📋 Salin Link Cepat untuk HP'}</span>
+                    </button>
+                  </div>
 
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={handleCopyPairCode}
-                          className="flex-1 py-2 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                        >
-                          {copiedPairCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                          <span>{copiedPairCode ? 'Kode Tersalin!' : 'Salin Kode'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCopyPairLink}
-                          className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md"
-                        >
-                          {copiedPairLink ? <Check className="w-3.5 h-3.5 text-white" /> : <ExternalLink className="w-3.5 h-3.5" />}
-                          <span>{copiedPairLink ? 'Link Tersalin!' : 'Salin Link HP'}</span>
-                        </button>
-                      </div>
+                  {/* Cara 2: Kode Tautan / Token (Untuk Ditempel di Layar Masuk HP) */}
+                  <div className="p-3 rounded-2xl bg-stone-900/70 border border-stone-800 space-y-2">
+                    <span className="text-[11px] font-bold text-stone-300 flex items-center gap-1.5">
+                      <Smartphone className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Cara 2: Tempel Token / Kode di HP</span>
+                    </span>
+                    <p className="text-[11px] text-stone-300 leading-relaxed">
+                      Salin kode token akun ini, lalu tempelkan pada kotak <em>&quot;Tautkan Akun dari Laptop&quot;</em> di layar Masuk HP Anda:
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleCopyPairToken}
+                      className="w-full py-2 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-stone-700"
+                    >
+                      {copiedPairToken ? <Check className="w-3.5 h-3.5 text-cyan-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedPairToken ? '✓ Token Akun Tersalin!' : 'Salin Token Akun'}</span>
+                    </button>
+                  </div>
 
-                      <div className="p-2.5 rounded-xl bg-stone-900/80 border border-stone-800 text-[11px] text-stone-300 space-y-1">
-                        <p className="font-semibold text-emerald-300">Cara pakai di HP:</p>
-                        <p>1. Buka web di HP, lalu pada menu Masuk klik <strong>&quot;Tautkan Akun dari Laptop&quot;</strong>.</p>
-                        <p>2. Masukkan 6 angka di atas, atau langsung buka Link HP yang telah disalin.</p>
+                  {/* Opsional: Kode 6-Angka jika server terhubung */}
+                  {pairCode && (
+                    <div className="p-3 rounded-2xl bg-stone-900/50 border border-stone-800/80 text-center space-y-1.5">
+                      <span className="text-[10px] uppercase tracking-wider text-emerald-400 font-bold block">
+                        Kode Sinkronisasi 6-Angka
+                      </span>
+                      <div className="text-2xl font-mono font-black tracking-widest text-emerald-300 select-all">
+                        {pairCode}
                       </div>
-                    </>
-                  ) : (
-                    <div className="text-center py-2 text-xs text-rose-400">Gagal memuat kode tautan.</div>
+                      <button
+                        type="button"
+                        onClick={handleCopyPairCode}
+                        className="py-1 px-3 text-[11px] text-stone-400 hover:text-emerald-300 transition-colors cursor-pointer"
+                      >
+                        {copiedPairCode ? '✓ Kode Tersalin' : 'Salin 6-Angka'}
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

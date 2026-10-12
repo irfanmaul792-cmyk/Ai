@@ -345,34 +345,33 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
               {/* TAB 1: LOGIN */}
               {mode === 'login' && (
                 <div className="space-y-4">
-                  {/* Quick Device Linking Box (Kode 6-Digit dari Laptop ke HP) */}
+                  {/* Quick Device Linking Box (Kode 6-Digit / Token dari Laptop ke HP) */}
                   <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-950/60 to-stone-950 border border-emerald-800/50 space-y-2.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-emerald-800/80 text-emerald-200 flex items-center justify-center">
                           <Smartphone className="w-3.5 h-3.5" />
                         </div>
-                        <span className="text-xs font-bold text-emerald-300">Tautkan Akun dari Laptop (Kode 6-Angka)</span>
+                        <span className="text-xs font-bold text-emerald-300">Tautkan Akun dari Laptop</span>
                       </div>
                     </div>
                     <p className="text-[11px] text-stone-300 leading-relaxed">
-                      Punya kode 6-angka dari menu akun di laptop? Masukkan di sini untuk langsung membuka akun dan isi kulkas Anda di HP ini tanpa ribet.
+                      Punya kode 6-angka, token, atau link dari menu akun di laptop? Masukkan atau tempel di sini untuk langsung membuka akun di HP ini:
                     </p>
                     <form onSubmit={handleClaimPairCode} className="flex gap-2">
                       <input
                         type="text"
-                        maxLength={6}
                         value={pairCodeInput}
-                        onChange={(e) => setPairCodeInput(e.target.value.replace(/\D/g, ''))}
-                        placeholder="Contoh: 123456"
-                        className="flex-1 px-3 py-2 rounded-xl bg-stone-950 border border-stone-800 text-center font-mono font-bold tracking-widest text-emerald-300 placeholder-stone-600 text-sm focus:outline-none focus:border-emerald-500"
+                        onChange={(e) => setPairCodeInput(e.target.value)}
+                        placeholder="Ketik 6-angka atau tempel link/token..."
+                        className="flex-1 px-3 py-2 rounded-xl bg-stone-950 border border-stone-800 font-mono text-emerald-300 placeholder-stone-600 text-xs focus:outline-none focus:border-emerald-500"
                       />
                       <button
                         type="submit"
-                        disabled={pairCodeInput.length !== 6 || loading}
+                        disabled={!pairCodeInput.trim() || loading}
                         className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs rounded-xl cursor-pointer transition-all shrink-0 flex items-center gap-1 shadow-md shadow-emerald-950/50"
                       >
-                        <span>{loading ? 'Menautkan...' : 'Tautkan Akun'}</span>
+                        <span>{loading ? 'Menghubungkan...' : 'Buka di HP'}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </form>

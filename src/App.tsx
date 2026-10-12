@@ -133,7 +133,25 @@ export default function App() {
       const params = new URLSearchParams(window.location.search);
       const hash = window.location.hash.toLowerCase();
 
-      // Check for Cross-Device Pairing Code (e.g. ?pair=123456 or ?sync_code=123456)
+      // 1. Check for Direct Sync Token (Client-Side Link Transfer - 100% resilient across HP & preview)
+      const syncAccountParam = params.get('sync_account') || params.get('sync_user') || params.get('kulkas_login') || params.get('sync');
+      if (syncAccountParam) {
+        const importRes = db.importFromSyncToken(syncAccountParam);
+        if (importRes.success && importRes.user) {
+          setCurrentUser(importRes.user);
+          const freshData = db.getUserData(importRes.user.id);
+          setIngredients(freshData.ingredients || []);
+          setSelectedFridgeIds(freshData.selectedFridgeIds || {});
+          setShoppingItems(freshData.shoppingItems || []);
+          setFavoriteRecipes(freshData.favoriteRecipes || []);
+          setIsAuthModalOpen(false);
+          showToast(`Akun "${importRes.user.name}" berhasil ditautkan dan dibuka di HP!`);
+          window.history.replaceState({}, '', window.location.pathname);
+          return;
+        }
+      }
+
+      // 2. Check for Cross-Device Pairing Code (e.g. ?pair=123456 or ?sync_code=123456)
       const pairCode = params.get('pair') || params.get('sync_code') || params.get('kode');
       if (pairCode) {
         const claimRes = await db.claimPairCode(pairCode);

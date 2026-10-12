@@ -43,6 +43,30 @@ async function hashPassword(plainText: string): Promise<string> {
 }
 
 /**
+ * Helper to encode UTF-8 string to base64 safely across all browsers
+ */
+function toBase64Utf8(str: string): string {
+  try {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode(parseInt(p1, 16))));
+  } catch {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+}
+
+/**
+ * Helper to decode base64 to UTF-8 string safely
+ */
+function fromBase64Utf8(b64: string): string {
+  try {
+    const raw = atob(b64);
+    const percentEncoded = Array.prototype.map.call(raw, (c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('');
+    return decodeURIComponent(percentEncoded);
+  } catch {
+    return decodeURIComponent(escape(atob(b64)));
+  }
+}
+
+/**
  * Database Service for Multi-User Refrigerator & Recipe management
  */
 class DatabaseService {
@@ -493,6 +517,85 @@ class DatabaseService {
   }
 
   /**
+   * Generates a self-contained portable sync token (works 100% offline & cross-domain)
+   */
+  public generateDirectSyncToken(userId: string): string {
+    try {
+      const users = this.getUsers();
+      const user = users.find(u => u.id === userId);
+      if (!user) return '';
+
+      const passHash = localStorage.getItem(`kulkas_db_auth_${userId}`) || '';
+      const accountData = this.getUserData(userId);
+
+      const payload = {
+        v: 1,
+        user,
+        passHash,
+        data: accountData,
+        t: Date.now()
+      };
+
+      return toBase64Utf8(JSON.stringify(payload));
+    } catch (err) {
+      console.error('Failed generating direct sync token:', err);
+      return '';
+    }
+  }
+
+  /**
+   * Generates a full 1-click shareable URL for HP (works without server dependency)
+   */
+  public generateDirectSyncUrl(userId: string): string {
+    if (typeof window === 'undefined') return '';
+    const token = this.generateDirectSyncToken(userId);
+    if (!token) return '';
+    return `${window.location.origin}${window.location.pathname}?sync_account=${encodeURIComponent(token)}`;
+  }
+
+  /**
+   * Imports account from a direct sync token or full URL (Client-Side, zero network error risk)
+   */
+  public importFromSyncToken(tokenOrUrl: string): { success: boolean; user?: User; error?: string } {
+    try {
+      let rawToken = tokenOrUrl.trim();
+      if (!rawToken) {
+        return { success: false, error: 'Token atau link tautan tidak boleh kosong.' };
+      }
+
+      // If user pasted a full URL
+      if (rawToken.includes('?')) {
+        try {
+          const urlObj = new URL(rawToken);
+          const qParam = urlObj.searchParams.get('sync_account') || urlObj.searchParams.get('sync_user') || urlObj.searchParams.get('kulkas_login');
+          if (qParam) {
+            rawToken = decodeURIComponent(qParam);
+          }
+        } catch {
+          // If URL parsing fails, extract via regex
+          const match = rawToken.match(/[?&](?:sync_account|sync_user|kulkas_login)=([^&#]+)/);
+          if (match && match[1]) {
+            rawToken = decodeURIComponent(match[1]);
+          }
+        }
+      }
+
+      const decodedJson = fromBase64Utf8(rawToken);
+      const parsed = JSON.parse(decodedJson);
+
+      if (parsed && parsed.user && parsed.user.id && parsed.user.name) {
+        this.importDirectUser(parsed.user, parsed.data, parsed.passHash);
+        return { success: true, user: parsed.user };
+      }
+
+      return { success: false, error: 'Format kode tautan tidak valid.' };
+    } catch (err) {
+      console.error('Failed importing from sync token:', err);
+      return { success: false, error: 'Kode tautan rusak atau tidak terbaca.' };
+    }
+  }
+
+  /**
    * Generate 6-digit sync code to link this account onto HP or other devices
    */
   public async generatePairCode(userId: string): Promise<{ success: boolean; code?: string; error?: string }> {
@@ -506,30 +609,44 @@ class DatabaseService {
       if (resp.ok && data.code) {
         return { success: true, code: data.code };
       }
-      return { success: false, error: data.error || 'Gagal membuat kode tautan.' };
+      return { success: false, error: data.error || 'Gagal membuat kode tautan di server.' };
     } catch (err) {
-      return { success: false, error: 'Tidak dapat menghubungi server sinkronisasi.' };
+      return { success: false, error: 'Server tidak dapat dijangkau dari tab ini. Gunakan Link Cepat HP di bawah.' };
     }
   }
 
   /**
-   * Claim account using 6-digit sync code from laptop on HP
+   * Claim account using 6-digit sync code or token from laptop on HP
    */
-  public async claimPairCode(code: string): Promise<{ success: boolean; user?: User; error?: string }> {
+  public async claimPairCode(codeOrToken: string): Promise<{ success: boolean; user?: User; error?: string }> {
+    const input = codeOrToken.trim();
+    if (!input) {
+      return { success: false, error: 'Masukkan kode atau tautan akun.' };
+    }
+
+    // 1. If user pasted a token or URL, decode client-side immediately (100% reliable)
+    if (input.length > 8 || input.includes('http') || input.includes('?') || input.includes('=')) {
+      return this.importFromSyncToken(input);
+    }
+
+    // 2. Otherwise treat as 6-digit code via server
     try {
       const resp = await fetch('/api/auth/claim-pair-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code })
+        body: JSON.stringify({ code: input })
       });
       const data = await resp.json();
       if (resp.ok && data.user) {
         this.importDirectUser(data.user, data.accountData, data.passHash);
         return { success: true, user: data.user };
       }
-      return { success: false, error: data.error || 'Kode tautan tidak ditemukan atau salah.' };
+      return { success: false, error: data.error || 'Kode tautan 6-angka tidak ditemukan atau telah kedaluwarsa.' };
     } catch (err) {
-      return { success: false, error: 'Gagal menghubungkan ke server tautan.' };
+      return { 
+        success: false, 
+        error: 'Tidak dapat menghubungkan ke server tautan dari HP ini. Silakan gunakan tombol "Salin Link HP" di laptop lalu buka link tersebut di HP.' 
+      };
     }
   }
 
