@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User as UserIcon, X, LogOut, Users, Trash2, Download, Upload, ShieldCheck, Database, Check, KeyRound } from 'lucide-react';
+import { User as UserIcon, X, LogOut, Users, Trash2, Download, Upload, ShieldCheck, Database, Check, KeyRound, Smartphone, Copy, ExternalLink } from 'lucide-react';
 import { db } from '../services/db';
 import { User } from '../types';
 
@@ -36,8 +36,41 @@ export const AccountMenuModal: React.FC<AccountMenuModalProps> = ({
   const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [copiedBackup, setCopiedBackup] = useState(false);
+  const [showPairCard, setShowPairCard] = useState(false);
+  const [pairCode, setPairCode] = useState<string | null>(null);
+  const [pairLoading, setPairLoading] = useState(false);
+  const [copiedPairLink, setCopiedPairLink] = useState(false);
+  const [copiedPairCode, setCopiedPairCode] = useState(false);
 
   if (!isOpen || !currentUser) return null;
+
+  const handleGeneratePairCode = async () => {
+    setShowPairCard(true);
+    setPairLoading(true);
+    const res = await db.generatePairCode(currentUser.id);
+    setPairLoading(false);
+    if (res.success && res.code) {
+      setPairCode(res.code);
+    }
+  };
+
+  const pairUrl = typeof window !== 'undefined' && pairCode 
+    ? `${window.location.origin}?pair=${pairCode}`
+    : '';
+
+  const handleCopyPairCode = () => {
+    if (!pairCode) return;
+    navigator.clipboard.writeText(pairCode);
+    setCopiedPairCode(true);
+    setTimeout(() => setCopiedPairCode(false), 2500);
+  };
+
+  const handleCopyPairLink = () => {
+    if (!pairUrl) return;
+    navigator.clipboard.writeText(pairUrl);
+    setCopiedPairLink(true);
+    setTimeout(() => setCopiedPairLink(false), 2500);
+  };
 
   const handleDownloadBackup = () => {
     try {
@@ -145,6 +178,75 @@ export const AccountMenuModal: React.FC<AccountMenuModalProps> = ({
 
           {/* Action List */}
           <div className="space-y-2">
+            {/* Tautkan Akun ke HP / Perangkat Lain */}
+            <div className="rounded-2xl border border-emerald-800/60 bg-gradient-to-br from-emerald-950/70 to-stone-950 overflow-hidden shadow-lg">
+              <button
+                type="button"
+                onClick={handleGeneratePairCode}
+                className="w-full p-3.5 transition-all flex items-center justify-between text-left text-xs cursor-pointer hover:bg-emerald-900/30"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-800/80 text-emerald-200 flex items-center justify-center shrink-0">
+                    <Smartphone className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold block text-emerald-300 text-xs sm:text-sm">Tautkan ke HP / Perangkat Lain</span>
+                    <span className="text-[11px] text-stone-300">Buka akun & isi kulkas ini di smartphone Anda</span>
+                  </div>
+                </div>
+                <span className="text-emerald-400 font-bold text-xs shrink-0 px-2.5 py-1 rounded-lg bg-emerald-950 border border-emerald-700/60">
+                  {showPairCard ? 'Tutup ▲' : 'Buka Kode 📲'}
+                </span>
+              </button>
+
+              {showPairCard && (
+                <div className="p-4 border-t border-emerald-900/60 bg-stone-950/90 space-y-3 animate-fade-in">
+                  {pairLoading ? (
+                    <div className="py-4 text-center text-xs text-stone-400">Membuat kode tautan instan...</div>
+                  ) : pairCode ? (
+                    <>
+                      <div className="text-center py-2 bg-stone-900 rounded-2xl border border-emerald-800/50">
+                        <span className="text-[10px] uppercase tracking-wider text-emerald-400 font-bold block mb-1">
+                          Kode Tautan 6-Angka
+                        </span>
+                        <div className="text-3xl font-mono font-black tracking-widest text-emerald-300 select-all">
+                          {pairCode}
+                        </div>
+                        <span className="text-[10px] text-stone-400 block mt-1">Berlaku selama 60 menit</span>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleCopyPairCode}
+                          className="flex-1 py-2 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          {copiedPairCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedPairCode ? 'Kode Tersalin!' : 'Salin Kode'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCopyPairLink}
+                          className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-md"
+                        >
+                          {copiedPairLink ? <Check className="w-3.5 h-3.5 text-white" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                          <span>{copiedPairLink ? 'Link Tersalin!' : 'Salin Link HP'}</span>
+                        </button>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-stone-900/80 border border-stone-800 text-[11px] text-stone-300 space-y-1">
+                        <p className="font-semibold text-emerald-300">Cara pakai di HP:</p>
+                        <p>1. Buka web di HP, lalu pada menu Masuk klik <strong>&quot;Tautkan Akun dari Laptop&quot;</strong>.</p>
+                        <p>2. Masukkan 6 angka di atas, atau langsung buka Link HP yang telah disalin.</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-2 text-xs text-rose-400">Gagal memuat kode tautan.</div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Switch Account */}
             <button
               type="button"

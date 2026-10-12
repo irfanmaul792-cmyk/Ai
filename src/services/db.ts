@@ -493,6 +493,77 @@ class DatabaseService {
   }
 
   /**
+   * Generate 6-digit sync code to link this account onto HP or other devices
+   */
+  public async generatePairCode(userId: string): Promise<{ success: boolean; code?: string; error?: string }> {
+    try {
+      const resp = await fetch('/api/auth/generate-pair-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      const data = await resp.json();
+      if (resp.ok && data.code) {
+        return { success: true, code: data.code };
+      }
+      return { success: false, error: data.error || 'Gagal membuat kode tautan.' };
+    } catch (err) {
+      return { success: false, error: 'Tidak dapat menghubungi server sinkronisasi.' };
+    }
+  }
+
+  /**
+   * Claim account using 6-digit sync code from laptop on HP
+   */
+  public async claimPairCode(code: string): Promise<{ success: boolean; user?: User; error?: string }> {
+    try {
+      const resp = await fetch('/api/auth/claim-pair-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+      const data = await resp.json();
+      if (resp.ok && data.user) {
+        this.importDirectUser(data.user, data.accountData, data.passHash);
+        return { success: true, user: data.user };
+      }
+      return { success: false, error: data.error || 'Kode tautan tidak ditemukan atau salah.' };
+    } catch (err) {
+      return { success: false, error: 'Gagal menghubungkan ke server tautan.' };
+    }
+  }
+
+  /**
+   * Direct import user and account data into device (Used for URL links and Sync Codes)
+   */
+  public importDirectUser(user: User, accountData?: any, passHash?: string): void {
+    try {
+      const users = this.getUsers();
+      const existingIdx = users.findIndex(u => u.id === user.id);
+      if (existingIdx >= 0) {
+        users[existingIdx] = user;
+      } else {
+        users.push(user);
+      }
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+      this.notifyUsersListeners(users);
+
+      if (passHash) {
+        localStorage.setItem(`kulkas_db_auth_${user.id}`, passHash);
+      }
+
+      if (accountData) {
+        this.memoryCache.set(user.id, accountData);
+        localStorage.setItem(`${DATA_PREFIX}${user.id}`, JSON.stringify(accountData));
+      }
+
+      this.setCurrentUser(user.id);
+    } catch (err) {
+      console.error('Error importing direct user:', err);
+    }
+  }
+
+  /**
    * Switch directly to another existing user on device
    */
   public switchUser(userId: string): User | null {

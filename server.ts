@@ -283,6 +283,80 @@ app.post('/api/auth/sync-all', (req, res) => {
   }
 });
 
+// In-memory pair codes for rapid cross-device linking (Laptop -> HP)
+const activePairCodes: Map<string, { code: string; userId: string; createdAt: number }> = new Map();
+
+app.post('/api/auth/generate-pair-code', (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID diperlukan.' });
+    }
+    const db = initCentralDb();
+    const user = db.users.find(u => u.id === userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Akun tidak ditemukan.' });
+    }
+
+    // Clean expired codes (> 60 mins)
+    const now = Date.now();
+    for (const [c, val] of activePairCodes.entries()) {
+      if (now - val.createdAt > 60 * 60 * 1000) {
+        activePairCodes.delete(c);
+      }
+    }
+
+    // Generate readable 6-character code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    activePairCodes.set(code, {
+      code,
+      userId,
+      createdAt: now
+    });
+
+    return res.json({ success: true, code, expiresInMinutes: 60 });
+  } catch (err) {
+    return res.status(500).json({ error: 'Gagal membuat kode tautan perangkat.' });
+  }
+});
+
+app.post('/api/auth/claim-pair-code', (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) {
+      return res.status(400).json({ error: 'Kode tautan harus diisi.' });
+    }
+    const cleanCode = code.toString().trim();
+    const pair = activePairCodes.get(cleanCode);
+    if (!pair) {
+      return res.status(404).json({ error: 'Kode tautan tidak valid atau telah kedaluwarsa. Silakan buat kode baru di laptop Anda.' });
+    }
+
+    const db = initCentralDb();
+    const user = db.users.find(u => u.id === pair.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Akun untuk kode ini tidak ditemukan.' });
+    }
+
+    const accountData = db.userData[user.id] || {
+      userId: user.id,
+      ingredients: [],
+      selectedFridgeIds: {},
+      shoppingItems: [],
+      favoriteRecipes: [],
+      filters: { budget: 'Bebas', cookingTime: 'Maks. 30 menit', servings: '2', preferences: 'suka pedas' },
+      photos: [],
+      updatedAt: Date.now()
+    };
+
+    const passHash = db.passwords[user.id] || '';
+
+    return res.json({ success: true, user, accountData, passHash });
+  } catch (err) {
+    return res.status(500).json({ error: 'Gagal menautkan akun perangkat.' });
+  }
+});
+
 app.get('/api/user-data/:userId', (req, res) => {
   const { userId } = req.params;
   const db = initCentralDb();

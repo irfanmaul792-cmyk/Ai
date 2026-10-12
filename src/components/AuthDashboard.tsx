@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, UserPlus, Users, Shield, Sparkles, ChefHat, CheckCircle2, AlertCircle, Trash2, ArrowRight, Refrigerator, Eye, EyeOff } from 'lucide-react';
+import { LogIn, UserPlus, Users, Shield, Sparkles, ChefHat, CheckCircle2, AlertCircle, Trash2, ArrowRight, Refrigerator, Eye, EyeOff, Smartphone } from 'lucide-react';
 import { db } from '../services/db';
 import { User } from '../types';
 import { DeleteAccountModal } from './DeleteAccountModal';
@@ -20,11 +20,13 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [pairCodeInput, setPairCodeInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [name, setName] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState('👨‍🍳');
   const [error, setError] = useState<string | null>(null);
+  const [existingAccountSuggestion, setExistingAccountSuggestion] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<{ id: string; name: string } | null>(null);
@@ -42,9 +44,35 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
     return unsubscribe;
   }, []);
 
+  const handleClaimPairCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    const clean = pairCodeInput.trim();
+    if (clean.length !== 6) {
+      setError('Kode tautan harus berupa 6 angka.');
+      return;
+    }
+
+    setLoading(true);
+    const res = await db.claimPairCode(clean);
+    setLoading(false);
+
+    if (res.success && res.user) {
+      setSuccess(`Akun "${res.user.name}" berhasil ditautkan ke perangkat ini! Membuka kulkas...`);
+      setTimeout(() => {
+        onLoginSuccess(res.user!);
+      }, 600);
+    } else {
+      setError(res.error || 'Kode tautan tidak ditemukan atau telah kedaluwarsa.');
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setExistingAccountSuggestion(null);
     setSuccess(null);
 
     if (!email.trim()) {
@@ -74,6 +102,7 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setExistingAccountSuggestion(null);
     setSuccess(null);
 
     const trimmedName = name.trim();
@@ -107,7 +136,8 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
     );
 
     if (isAlreadyUsed) {
-      setError(`Email atau ID "${trimmedEmail}" sudah digunakan oleh akun lain. Silakan gunakan email atau ID yang lain.`);
+      setError(`Email atau ID "${trimmedEmail}" sudah terdaftar di database kulkas.`);
+      setExistingAccountSuggestion(trimmedEmail);
       return;
     }
 
@@ -121,7 +151,10 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
         onLoginSuccess(res.user!);
       }, 700);
     } else {
-      setError(res.error || `Email atau ID "${trimmedEmail}" sudah digunakan. Silakan gunakan email atau ID lain.`);
+      setError(res.error || `Email atau ID "${trimmedEmail}" sudah digunakan.`);
+      if (res.error?.includes('sudah digunakan')) {
+        setExistingAccountSuggestion(trimmedEmail);
+      }
     }
   };
 
@@ -280,6 +313,28 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
                 </div>
               )}
 
+              {/* Prompt to switch to Login if user already exists */}
+              {existingAccountSuggestion && (
+                <div className="p-3.5 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-200 text-xs space-y-2 animate-fade-in">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-amber-400" />
+                    <span>Akun <strong>"{existingAccountSuggestion}"</strong> sudah terdaftar di database kulkas!</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('login');
+                      setEmail(existingAccountSuggestion);
+                      setError(null);
+                      setExistingAccountSuggestion(null);
+                    }}
+                    className="w-full py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all"
+                  >
+                    <span>Masuk Sekarang Menggunakan Akun Ini &rarr;</span>
+                  </button>
+                </div>
+              )}
+
               {success && (
                 <div className="p-3.5 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -290,6 +345,39 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
               {/* TAB 1: LOGIN */}
               {mode === 'login' && (
                 <div className="space-y-4">
+                  {/* Quick Device Linking Box (Kode 6-Digit dari Laptop ke HP) */}
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-950/60 to-stone-950 border border-emerald-800/50 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-emerald-800/80 text-emerald-200 flex items-center justify-center">
+                          <Smartphone className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="text-xs font-bold text-emerald-300">Tautkan Akun dari Laptop (Kode 6-Angka)</span>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-stone-300 leading-relaxed">
+                      Punya kode 6-angka dari menu akun di laptop? Masukkan di sini untuk langsung membuka akun dan isi kulkas Anda di HP ini tanpa ribet.
+                    </p>
+                    <form onSubmit={handleClaimPairCode} className="flex gap-2">
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={pairCodeInput}
+                        onChange={(e) => setPairCodeInput(e.target.value.replace(/\D/g, ''))}
+                        placeholder="Contoh: 123456"
+                        className="flex-1 px-3 py-2 rounded-xl bg-stone-950 border border-stone-800 text-center font-mono font-bold tracking-widest text-emerald-300 placeholder-stone-600 text-sm focus:outline-none focus:border-emerald-500"
+                      />
+                      <button
+                        type="submit"
+                        disabled={pairCodeInput.length !== 6 || loading}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs rounded-xl cursor-pointer transition-all shrink-0 flex items-center gap-1 shadow-md shadow-emerald-950/50"
+                      >
+                        <span>{loading ? 'Menautkan...' : 'Tautkan Akun'}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </form>
+                  </div>
+
                   {/* Quick Select for returning user (if exists on this device) */}
                   {allUsers.length > 0 && (
                     <div className="mb-4 space-y-2">

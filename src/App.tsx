@@ -67,9 +67,8 @@ export default function App() {
         return 'login';
       }
     }
-    const users = db.getUsers();
-    if (users.length === 0) return 'register';
     const cur = db.getCurrentUser();
+    // Default to 'login' across devices so HP / new browsers can enter existing account
     return cur ? 'switch' : 'login';
   });
 
@@ -126,30 +125,50 @@ export default function App() {
 
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState<boolean>(false);
 
-  // Monitor URL params dynamically for shareable login links
+  // Monitor URL params dynamically for shareable login links & cross-device pair codes
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const evaluateUrlAuth = () => {
+    const evaluateUrlAuth = async () => {
       const params = new URLSearchParams(window.location.search);
       const hash = window.location.hash.toLowerCase();
+
+      // Check for Cross-Device Pairing Code (e.g. ?pair=123456 or ?sync_code=123456)
+      const pairCode = params.get('pair') || params.get('sync_code') || params.get('kode');
+      if (pairCode) {
+        const claimRes = await db.claimPairCode(pairCode);
+        if (claimRes.success && claimRes.user) {
+          setCurrentUser(claimRes.user);
+          const freshData = db.getUserData(claimRes.user.id);
+          setIngredients(freshData.ingredients || []);
+          setSelectedFridgeIds(freshData.selectedFridgeIds || {});
+          setShoppingItems(freshData.shoppingItems || []);
+          setFavoriteRecipes(freshData.favoriteRecipes || []);
+          setIsAuthModalOpen(false);
+          showToast(`Akun "${claimRes.user.name}" berhasil ditautkan ke HP ini! Membuka kulkas Anda...`);
+          // Clean URL
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, '', cleanUrl);
+          return;
+        }
+      }
 
       const isRegister = 
         params.get('auth') === 'register' || 
         params.get('mode') === 'register' || 
         params.has('register') || 
-        params.has('daftar') ||
-        hash.includes('register') ||
+        params.has('daftar') || 
+        hash.includes('register') || 
         hash.includes('daftar');
 
       const isLogin = 
         params.get('auth') === 'login' || 
         params.get('mode') === 'login' || 
         params.has('login') || 
-        params.has('logout') ||
-        params.has('keluar') ||
-        hash.includes('login') ||
-        hash.includes('logout') ||
+        params.has('logout') || 
+        params.has('keluar') || 
+        hash.includes('login') || 
+        hash.includes('logout') || 
         hash.includes('masuk');
 
       if (isRegister) {
