@@ -234,6 +234,55 @@ app.post('/api/auth/change-password', (req, res) => {
   }
 });
 
+// Sync accounts bidirectionally across web/devices
+app.post('/api/auth/sync-all', (req, res) => {
+  try {
+    const { users, passwords, userData } = req.body;
+    const db = initCentralDb();
+    let hasChanges = false;
+
+    if (Array.isArray(users)) {
+      users.forEach((clientUser: any) => {
+        if (!clientUser?.id) return;
+        const exists = db.users.find(u => 
+          u.id === clientUser.id || 
+          u.email.toLowerCase() === (clientUser.email || '').toLowerCase()
+        );
+        if (!exists) {
+          db.users.push(clientUser);
+          hasChanges = true;
+        }
+      });
+    }
+
+    if (passwords && typeof passwords === 'object') {
+      Object.entries(passwords).forEach(([uid, passHash]) => {
+        if (!db.passwords[uid] && typeof passHash === 'string') {
+          db.passwords[uid] = passHash;
+          hasChanges = true;
+        }
+      });
+    }
+
+    if (userData && typeof userData === 'object') {
+      Object.entries(userData).forEach(([uid, uData]) => {
+        if (!db.userData[uid] && uData) {
+          db.userData[uid] = uData;
+          hasChanges = true;
+        }
+      });
+    }
+
+    if (hasChanges) {
+      saveCentralDb(db);
+    }
+
+    return res.json({ success: true, users: db.users });
+  } catch (err) {
+    return res.status(500).json({ error: 'Gagal sinkronisasi data akun ke server.' });
+  }
+});
+
 app.get('/api/user-data/:userId', (req, res) => {
   const { userId } = req.params;
   const db = initCentralDb();
@@ -522,7 +571,7 @@ Jika bahan utamanya daging sapi dan sayur, ciptakan "Oseng Daging Sapi Bumbu Baw
 Setiap resep wajib menyertakan:
 1. "story": Cerita kuliner / filosofi unik khas koki di balik resep ini (2-3 kalimat menarik).
 2. "chefTip": Tips rahasia koki untuk menjaga kelezatan, nutrisi, atau teknik memasak terbaik.
-3. Langkah-langkah memasak ("steps") berurutan yang runtut dengan estimasi waktu per langkah (dalam menit).
+3. Langkah-langkah memasak ("steps") berurutan, SANGAT JELAS, RUNTUT, DAN DETAIL (antara 5 sampai 8 langkah, TIDAK BOLEH SAMPAI 10 LANGKAH!). Jelaskan teknik api, urutan penumisan/perebusan, bumbu, dan indikator kematangan secara spesifik.
 4. Persentase kecocokan bahan ("matchPercentage") antara 75% sampai 100%.`;
 
     const { data: parsed, usedModel } = await generateAndParseWithFallback<any[]>(ai, {

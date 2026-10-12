@@ -129,30 +129,35 @@ export function generateDynamicRecipes({
     steps: [
       {
         step: 1,
-        instruction: `Siapkan bahan: potong ${mainProteinName} dan ${mainVeggieName} menjadi ukuran gigitan agar cepat matang merata.`,
+        instruction: `Persiapan Bahan: Potong ${mainProteinName} dan ${mainVeggieName} menjadi ukuran gigitan serasi agar bumbu cepat meresap dan matang bersamaan.`,
         durationMinutes: 4,
-        tip: 'Potong bahan dengan ketebalan yang sama agar matangnya bersamaan.'
+        tip: 'Potong bahan dengan ketebalan yang sama agar tingkat kematangannya merata.'
       },
       {
         step: 2,
-        instruction: 'Panaskan 2 sdm minyak di wajan dengan api sedang. Tumis irisan bawang putih dan merah hingga harum kekuningan.',
+        instruction: 'Penumisan Bumbu Aromatik: Panaskan 2 sdm minyak di wajan dengan api sedang. Tumis irisan bawang putih dan merah hingga harum kekuningan.',
         durationMinutes: 2
       },
       {
         step: 3,
-        instruction: `Masukkan ${mainProteinName}. Tumis dan aduk cepat hingga berubah warna dan mengeluarkan aroma gurih sedap.`,
+        instruction: `Pematangan Protein: Masukkan ${mainProteinName}. Tumis dan aduk cepat dengan api agak besar hingga berubah warna dan mengeluarkan aroma sedap.`,
         durationMinutes: 4,
-        tip: 'Gunakan api agak besar saat menumis daging/protein agar cairan tidak keluar berlebihan.'
+        tip: 'Gunakan api agak besar saat menumis agar sarinya tidak keluar berlebihan.'
       },
       {
         step: 4,
-        instruction: `Masukkan ${mainVeggieName}, bumbui dengan saus tiram, sejumput garam, lada, dan sedikit air (3 sdm). Aduk sebentar hingga sayuran matang krispi.`,
-        durationMinutes: 3,
-        tip: 'Jangan masak sayur terlalu lama agar warnanya tetap cerah dan vitaminnya terjaga.'
+        instruction: `Pemasukan Sayuran: Masukkan ${mainVeggieName}. Bumbui dengan saus tiram, sejumput garam, lada, dan 3 sdm air matang.`,
+        durationMinutes: 2
       },
       {
         step: 5,
-        instruction: 'Koreksi rasa, angkat selagi panas dan sajikan bersama nasi hangat.',
+        instruction: 'Pemasakan Cepat & Koreksi Rasa: Aduk rata selama 2 menit hingga sayuran matang krispi dan bumbu meresap sempurna. Cicipi rasanya.',
+        durationMinutes: 2,
+        tip: 'Jangan masak sayur terlalu lama agar warnanya tetap cerah dan vitaminnya terjaga.'
+      },
+      {
+        step: 6,
+        instruction: 'Penyajian Hangat: Angkat dari wajan selagi panas mengepul dan sajikan bersama nasi hangat.',
         durationMinutes: 1
       }
     ],
@@ -197,24 +202,34 @@ export function generateDynamicRecipes({
     steps: [
       {
         step: 1,
-        instruction: `Rebus air dalam panci hingga mendidih. Masukkan bawang putih geprek dan potongan ${soupMain}.`,
-        durationMinutes: 8,
-        tip: 'Buang buih yang mengapung di permukaan air agar kuah tetap bening jernih berkilau.'
+        instruction: `Perebusan Kaldu Awal: Rebus 800 ml air dalam panci hingga mendidih. Masukkan 3 siung bawang putih geprek dan potongan ${soupMain}.`,
+        durationMinutes: 7,
+        tip: 'Merebus bersama bawang putih geprek dari awal membuat kaldu beraroma gurih alami.'
       },
       {
         step: 2,
-        instruction: `Masukkan ${soupVeggie}. Bumbui dengan garam, merica bubuk, dan sedikit kaldu penyedap.`,
-        durationMinutes: 5,
-        tip: 'Jika memakai wortel, masukkan lebih dulu sebelum sayuran hijau.'
-      },
-      {
-        step: 3,
-        instruction: 'Masak hingga semua bahan empuk pas. Sesaat sebelum diangkat, taburkan irisan daun bawang dan seledri.',
+        instruction: 'Pembersihan Buih Kaldu: Gunakan sendok sayur untuk membuang buih kotoran yang mengapung di permukaan air agar kuah sup tetap jernih bening berkilau.',
         durationMinutes: 2
       },
       {
+        step: 3,
+        instruction: `Pemasukan Sayuran Utama: Masukkan potongan ${soupVeggie}. Bumbui dengan garam, merica bubuk, dan sedikit kaldu jamur.`,
+        durationMinutes: 4,
+        tip: 'Jika sayuran bertekstur keras seperti wortel atau kentang, dahulukan sebelum sayuran berdaun hijau.'
+      },
+      {
         step: 4,
-        instruction: 'Tuang ke dalam mangkuk saji hangat. Siap dinikmati selagi mengepul.',
+        instruction: 'Pematangan Sayuran: Masak dengan api sedang selama 3-4 menit hingga semua bahan empuk pas dan aroma kuah wangi sedap.',
+        durationMinutes: 4
+      },
+      {
+        step: 5,
+        instruction: 'Penambahan Daun Bawang & Seledri: Matikan api kompor. Masukkan irisan daun bawang dan seledri cincang halus agar kesegarannya terjaga.',
+        durationMinutes: 1
+      },
+      {
+        step: 6,
+        instruction: 'Penyajian Hangat: Tuang ke dalam mangkuk saji hangat, taburi sedikit bawang goreng renyah di atasnya, siap dinikmati.',
         durationMinutes: 1
       }
     ],
@@ -259,23 +274,33 @@ export function generateDynamicRecipes({
       steps: [
         {
           step: 1,
-          instruction: 'Didihkan air dengan sedikit garam, rebus spaghetti selama 8-9 menit hingga al dente. Tiriskan dan sisihkan 3 sdm air rebusannya.',
+          instruction: 'Perebusan Pasta Al Dente: Didihkan air dengan 1 sdt garam, rebus spaghetti selama 8 menit sampai al dente. Tiriskan dan simpan 3 sdm air rebusannya.',
           durationMinutes: 8
         },
         {
           step: 2,
-          instruction: `Panaskan wajan dengan minyak/margarin. Tumis bawang cincang hingga harum, lalu masukkan ${fusionProtein} hingga matang kecokelatan.`,
-          durationMinutes: 4
-        },
-        {
-          step: 3,
-          instruction: 'Tuang saus pasta dan 3 sdm air rebusan pasta. Bumbui dengan garam, gula, dan lada. Masak mendidih kecil selama 3 menit.',
+          instruction: 'Penumisan Bumbu Cincang: Panaskan wajan dengan margarin atau minyak. Tumis bawang bombay dan bawang putih cincang hingga harum layu kekuningan.',
           durationMinutes: 3
         },
         {
+          step: 3,
+          instruction: `Pematangan Protein: Masukkan potongan ${fusionProtein}. Tumis dan aduk merata hingga matang kecokelatan.`,
+          durationMinutes: 4
+        },
+        {
           step: 4,
-          instruction: 'Campurkan spaghetti ke dalam saus, aduk merata dan sajikan hangat.',
+          instruction: 'Pemasukan Saus & Bumbu: Tuangkan saus pasta dan 3 sdm air rebusan pasta. Bumbui dengan sejumput garam, gula, dan lada. Masak mendidih kecil selama 3 menit.',
+          durationMinutes: 3
+        },
+        {
+          step: 5,
+          instruction: 'Penggabungan Pasta: Masukkan spaghetti ke dalam wajan saus, aduk rata selama 1-2 menit hingga saus menyelimuti mie dengan sempurna.',
           durationMinutes: 2
+        },
+        {
+          step: 6,
+          instruction: 'Penyajian Hangat: Tata di atas piring saji, taburi sedikit oregano bila tersedia, sajikan selagi hangat.',
+          durationMinutes: 1
         }
       ],
       nutrition: {
@@ -313,23 +338,33 @@ export function generateDynamicRecipes({
       steps: [
         {
           step: 1,
-          instruction: 'Panaskan minyak di wajan datar. Tumis bawang cincang hingga harum kekuningan.',
+          instruction: 'Penumisan Bumbu Aromatik: Panaskan minyak di wajan datar. Tumis bawang cincang hingga harum kekuningan.',
           durationMinutes: 2
         },
         {
           step: 2,
-          instruction: `Masukkan ${fusionProtein} dan irisan ${mainVeggieName}. Aduk cepat hingga matang sempurna.`,
+          instruction: `Pematangan Protein: Masukkan potongan ${fusionProtein}, tumis cepat hingga matang berubah warna.`,
           durationMinutes: 3
         },
         {
           step: 3,
-          instruction: 'Masukkan nasi/mie dingin. Tuang kecap manis, saus tiram, garam, dan lada. Gunakan api besar dan aduk cepat hingga bumbu merata.',
-          durationMinutes: 4,
-          tip: 'Gunakan nasi dingin dari kulkas agar butirannya tidak lembek menggumpal.'
+          instruction: `Pemasukan Sayuran: Masukkan irisan ${mainVeggieName}, aduk bersama bumbu selama 1-2 menit hingga sayur setengah layu.`,
+          durationMinutes: 2
         },
         {
           step: 4,
-          instruction: 'Angkat dan sajikan selagi panas bersama kerupuk atau taburan bawang goreng.',
+          instruction: 'Pemasukan Nasi / Mie: Masukkan nasi dingin atau mie, ratakan bulirnya agar tidak ada yang menggumpal.',
+          durationMinutes: 2
+        },
+        {
+          step: 5,
+          instruction: 'Pembumbuan Api Besar: Tuangkan kecap manis, saus tiram, garam, dan lada. Besarkan api dan aduk cepat hingga bumbu merata beraroma wajan sedap.',
+          durationMinutes: 3,
+          tip: 'Gunakan nasi dingin dari kulkas agar butirannya tidak lembek menggumpal.'
+        },
+        {
+          step: 6,
+          instruction: 'Penyajian Hangat: Koreksi rasa, angkat dan sajikan selagi panas bersama kerupuk atau taburan bawang goreng.',
           durationMinutes: 1
         }
       ],
@@ -371,22 +406,27 @@ export function generateDynamicRecipes({
     steps: [
       {
         step: 1,
-        instruction: `Potong-potong ${fourthItem} sesuai selera agar bumbu mudah meresap.`,
+        instruction: `Persiapan Bahan: Potong ${fourthItem} sesuai ukuran selera agar bumbu mudah meresap dan matangnya seragam.`,
         durationMinutes: 2
       },
       {
         step: 2,
-        instruction: 'Lelehkan margarin di wajan, tumis bawang hingga wangi gurih semerbak.',
+        instruction: 'Pelelehan Mentega & Penumisan: Lelehkan 1.5 sdm margarin di wajan dengan api sedang, tumis bawang cincang hingga wangi gurih semerbak.',
         durationMinutes: 2
       },
       {
         step: 3,
-        instruction: `Masukkan ${fourthItem}, bumbui dengan sedikit kecap asin, saus tiram, dan lada. Masak cepat selama 4-5 menit.`,
-        durationMinutes: 4
+        instruction: `Pematangan & Pembumbuan: Masukkan ${fourthItem}, bumbui dengan sedikit kecap asin, saus tiram, sejumput garam, dan lada bubuk.`,
+        durationMinutes: 3
       },
       {
         step: 4,
-        instruction: 'Angkat saat bumbu sudah meresap harum. Sajikan sebagai lauk pendamping lezat.',
+        instruction: 'Pengadukan Lembut: Aduk perlahan dengan api kecil-sedang selama 2 menit agar tekstur tetap lembut dan mentega meresap sempurna.',
+        durationMinutes: 2
+      },
+      {
+        step: 5,
+        instruction: 'Penyajian Hangat: Angkat saat aroma bumbu mentega wangi menguar sedap. Sajikan hangat sebagai lauk pendamping istimewa.',
         durationMinutes: 1
       }
     ],
@@ -431,23 +471,34 @@ export function generateDynamicRecipes({
     steps: [
       {
         step: 1,
-        instruction: 'Panaskan wajan dengan minyak atau margarin. Tumis irisan bawang dan cabai rawit hingga wangi kekuningan.',
+        instruction: 'Penumisan Bumbu Iris: Panaskan wajan dengan 2 sdm minyak atau margarin. Tumis irisan bawang merah, bawang putih, dan cabai rawit hingga harum kekuningan.',
         durationMinutes: 2
       },
       {
         step: 2,
-        instruction: `Masukkan ${fifthItem}, tumis cepat dengan api sedang hingga matang merata dan mengeluarkan aroma harum.`,
+        instruction: `Pematangan Bahan Utama: Masukkan potongan ${fifthItem}, tumis cepat dengan api sedang hingga matang merata dan mengeluarkan aroma gurih.`,
         durationMinutes: 3
       },
       {
         step: 3,
-        instruction: 'Masukkan nasi atau karbohidrat. Bumbui dengan kecap manis, saus tiram, garam, dan lada bubuk.',
+        instruction: 'Pemasukan Nasi / Karbohidrat: Masukkan nasi dingin atau karbohidrat pilihan, uraikan dengan spatula agar bulirnya tidak menggumpal.',
         durationMinutes: 2
       },
       {
         step: 4,
-        instruction: 'Aduk cepat dengan api besar hingga bumbu merata dan nasi berbutir kering sedap. Sajikan selagi hangat.',
-        durationMinutes: 3
+        instruction: 'Pembumbuan Rasa: Tuangkan kecap manis, saus tiram, sejumput garam, dan lada bubuk ke atas nasi.',
+        durationMinutes: 1
+      },
+      {
+        step: 5,
+        instruction: 'Pengadukan Cepat Api Besar: Besarkan api dan aduk cepat selama 2 menit hingga bumbu merata beraroma wajan smoky harum menggugah selera.',
+        durationMinutes: 2,
+        tip: 'Teknik api besar di akhir memasak menghasilkan nasi goreng kering berbutir yang lezat.'
+      },
+      {
+        step: 6,
+        instruction: 'Penyajian Spesial: Koreksi rasa gurih pedasnya, matikan kompor dan sajikan selagi panas bersama kerupuk.',
+        durationMinutes: 1
       }
     ],
     nutrition: {
@@ -488,23 +539,34 @@ export function generateDynamicRecipes({
     steps: [
       {
         step: 1,
-        instruction: `Goreng atau tumis sebentar ${sixthItem} hingga berkulit dan tiriskan.`,
+        instruction: `Penggorengan / Penumisan Awal: Goreng atau tumis sebentar ${sixthItem} di wajan hingga permukaannya berkulit matang, lalu tiriskan.`,
         durationMinutes: 4
       },
       {
         step: 2,
-        instruction: 'Tumis cabai, bawang, dan tomat yang dicincang kasar hingga matang berminyak dan tidak langu.',
-        durationMinutes: 5
+        instruction: 'Penghalusan Bumbu Balado: Haluskan kasar cabai merah, cabai rawit, bawang merah, dan bawang putih.',
+        durationMinutes: 2
       },
       {
         step: 3,
-        instruction: 'Bumbui sambal balado dengan garam dan gula merah hingga rasa gurih pedas manisnya pas seimbang.',
-        durationMinutes: 2
+        instruction: 'Penumisan Sambal Balado: Panaskan 2 sdm minyak di wajan, tumis bumbu halus bersama potongan tomat segar hingga matang berminyak dan aroma langu hilang.',
+        durationMinutes: 4,
+        tip: 'Pastikan tomat dan cabai benar-benar matang agar sambal balado terasa manis alami dan tidak asam getir.'
       },
       {
         step: 4,
-        instruction: `Masukkan ${sixthItem}, aduk rata dengan sambal balado di atas api kecil selama 2 menit. Angkat dan sajikan.`,
+        instruction: 'Pembumbuan Sambal: Bumbui sambal balado dengan garam dan gula merah hingga rasa gurih pedas manisnya pas seimbang.',
+        durationMinutes: 1
+      },
+      {
+        step: 5,
+        instruction: `Penyatuan Bahan: Masukkan ${sixthItem} ke dalam sambal balado, aduk merata di atas api kecil selama 2 menit agar bumbu meresap.`,
         durationMinutes: 2
+      },
+      {
+        step: 6,
+        instruction: 'Penyajian Balado Segar: Angkat dan sajikan balado harum selagi hangat bersama nasi putih.',
+        durationMinutes: 1
       }
     ],
     nutrition: {

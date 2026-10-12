@@ -273,8 +273,22 @@ export default function App() {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage(prev => (prev === msg ? null : prev));
-    }, 3000);
+    }, 4000);
   };
+
+  // Sync with central server on mount
+  useEffect(() => {
+    db.syncWithServer().then(() => {
+      const user = db.getCurrentUser();
+      if (user) {
+        const data = db.getUserData(user.id);
+        if (data.ingredients) setIngredients(data.ingredients);
+        if (data.selectedFridgeIds) setSelectedFridgeIds(data.selectedFridgeIds);
+        if (data.shoppingItems) setShoppingItems(data.shoppingItems);
+        if (data.favoriteRecipes) setFavoriteRecipes(data.favoriteRecipes);
+      }
+    });
+  }, []);
 
   // Persist user's inventory, shopping items, and favorites directly into their database account
   useEffect(() => {
@@ -780,11 +794,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F8F7F3] text-stone-900 flex flex-col font-sans relative">
-      {/* Toast Notification Floating Banner */}
+      {/* Toast Notification Floating Banner (Pusat & Menonjol) */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-stone-700 text-xs sm:text-sm font-semibold flex items-center gap-2.5 animate-bounce">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] max-w-md w-[90%] sm:w-auto bg-stone-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-emerald-500/50 text-xs sm:text-sm font-semibold flex items-center justify-center gap-3 animate-fade-in ring-2 ring-emerald-500/20">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          <span className="text-center">{toastMessage}</span>
         </div>
       )}
 
@@ -1418,7 +1432,7 @@ export default function App() {
 
           {/* Recipe Cards Grid (No Images, Clean & Typographic - 6 Resep) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {filteredRecipes.map((recipe) => (
+            {filteredRecipes.map((recipe: Recipe) => (
               <RecipeCard
                 key={recipe.id}
                 recipe={recipe}

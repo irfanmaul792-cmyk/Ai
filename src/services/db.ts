@@ -91,26 +91,89 @@ class DatabaseService {
     this.syncWithServer();
   }
 
+  private usersListeners: Array<(users: User[]) => void> = [];
+
   /**
-   * Pull latest users and current user data from server
+   * Subscribe to changes in registered accounts (multi-device sync updates)
    */
-  public async syncWithServer(): Promise<void> {
-    if (typeof window === 'undefined') return;
+  public subscribeUsers(listener: (users: User[]) => void): () => void {
+    this.usersListeners.push(listener);
+    return () => {
+      this.usersListeners = this.usersListeners.filter(l => l !== listener);
+    };
+  }
+
+  private notifyUsersListeners(users: User[]): void {
+    this.usersListeners.forEach(listener => {
+      try {
+        listener(users);
+      } catch (e) {
+        console.warn('Error in users listener:', e);
+      }
+    });
+  }
+
+  /**
+   * Pull and push latest users and current user data to/from server
+   */
+  public async syncWithServer(): Promise<User[]> {
+    if (typeof window === 'undefined') return [];
     try {
-      const res = await fetch('/api/auth/users');
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.users)) {
-          const localUsers = this.getUsers();
-          const userMap = new Map<string, User>();
-          localUsers.forEach(u => userMap.set(u.id, u));
-          data.users.forEach((u: User) => userMap.set(u.id, u));
-          const merged = Array.from(userMap.values());
-          localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged));
+      const localUsers = this.getUsers();
+      const localPasswords: Record<string, string> = {};
+      const localUserData: Record<string, any> = {};
+
+      localUsers.forEach(u => {
+        const hash = localStorage.getItem(`kulkas_db_auth_${u.id}`);
+        if (hash) localPasswords[u.id] = hash;
+        const uDataRaw = localStorage.getItem(`${DATA_PREFIX}${u.id}`);
+        if (uDataRaw) {
+          try {
+            localUserData[u.id] = JSON.parse(uDataRaw);
+          } catch {}
+        }
+      });
+
+      // 1. Bidirectional sync with central server
+      try {
+        const syncResp = await fetch('/api/auth/sync-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            users: localUsers,
+            passwords: localPasswords,
+            userData: localUserData
+          })
+        });
+
+        if (syncResp.ok) {
+          const syncData = await syncResp.json();
+          if (Array.isArray(syncData.users)) {
+            const userMap = new Map<string, User>();
+            localUsers.forEach(u => userMap.set(u.id, u));
+            syncData.users.forEach((u: User) => userMap.set(u.id, u));
+            const merged = Array.from(userMap.values());
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged));
+            this.notifyUsersListeners(merged);
+          }
+        }
+      } catch (syncErr) {
+        // Fallback: standard users GET if sync-all unavailable
+        const res = await fetch('/api/auth/users');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.users)) {
+            const userMap = new Map<string, User>();
+            localUsers.forEach(u => userMap.set(u.id, u));
+            data.users.forEach((u: User) => userMap.set(u.id, u));
+            const merged = Array.from(userMap.values());
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged));
+            this.notifyUsersListeners(merged);
+          }
         }
       }
 
-      // Sync active user data from server if available
+      // 2. Sync active user data from server if available
       const currentId = localStorage.getItem(CURRENT_USER_KEY);
       if (currentId) {
         const dataRes = await fetch(`/api/user-data/${currentId}`);
@@ -122,8 +185,11 @@ class DatabaseService {
           }
         }
       }
+
+      return this.getUsers();
     } catch (err) {
       // Offline fallback - ignore
+      return this.getUsers();
     }
   }
 
@@ -209,6 +275,7 @@ class DatabaseService {
               users.push(serverUser);
               localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
             }
+            this.notifyUsersListeners(users);
             if (result.accountData) {
               this.memoryCache.set(serverUser.id, result.accountData);
               localStorage.setItem(`${DATA_PREFIX}${serverUser.id}`, JSON.stringify(result.accountData));
@@ -251,6 +318,7 @@ class DatabaseService {
 
       users.push(newUser);
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+      this.notifyUsersListeners(users);
       localStorage.setItem(`kulkas_db_auth_${id}`, passwordHash);
 
       const emptyData = createEmptyAccountData(id);
@@ -411,6 +479,7 @@ class DatabaseService {
       let users = this.getUsers();
       users = users.filter(u => u.id !== userId);
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+      this.notifyUsersListeners(users);
       localStorage.removeItem(`${DATA_PREFIX}${userId}`);
       localStorage.removeItem(`kulkas_db_auth_${userId}`);
       this.memoryCache.delete(userId);

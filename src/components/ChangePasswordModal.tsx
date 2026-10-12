@@ -26,8 +26,18 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleClose = () => {
+    setIsSuccess(false);
+    setOldPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setError(null);
+    onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,8 +63,8 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     setLoading(false);
 
     if (result.success) {
+      setIsSuccess(true);
       onSuccess('Kata sandi akun berhasil diperbarui! Anda dapat menggunakannya di HP atau perangkat lain.');
-      onClose();
     } else {
       setError(result.error || 'Gagal mengubah kata sandi. Pastikan kata sandi lama benar.');
     }
@@ -82,15 +92,48 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="text-stone-400 hover:text-white p-2 rounded-xl hover:bg-stone-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+        {/* Success View */}
+        {isSuccess ? (
+          <div className="p-6 sm:p-8 space-y-5 text-center flex-1 overflow-y-auto">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500/50 flex items-center justify-center mx-auto text-emerald-400 shadow-lg shadow-emerald-950/50 animate-bounce">
+              <CheckCircle2 className="w-9 h-9" />
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="text-lg font-bold text-white">Kata Sandi Berhasil Diperbarui! 🎉</h4>
+              <p className="text-xs sm:text-sm text-stone-300 leading-relaxed max-w-xs mx-auto">
+                Kata sandi baru untuk akun <strong className="text-emerald-400 font-semibold">{currentUser.name}</strong> telah berhasil disimpan dan disinkronkan ke server pusat.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-stone-950/80 border border-stone-800 text-left space-y-2 text-xs">
+              <div className="flex items-center gap-2 text-emerald-400 font-semibold">
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                <span>Siap Digunakan di Perangkat Lain</span>
+              </div>
+              <p className="text-[11px] text-stone-400 leading-relaxed">
+                Anda kini dapat masuk menggunakan kata sandi baru ini saat membuka web Isi Kulkasku dari HP lain, laptop, atau browser yang berbeda.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleClose}
+              className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold text-sm shadow-xl shadow-emerald-950/60 transition-all cursor-pointer border border-emerald-400/30"
+            >
+              Selesai & Tutup
+            </button>
+          </div>
+        ) : (
+          /* Form Body */
+          <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
           {error && (
             <div className="p-3.5 rounded-2xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -209,13 +252,14 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="w-full py-2.5 rounded-xl text-stone-400 hover:text-stone-200 text-xs font-semibold hover:bg-stone-800/60 transition-colors cursor-pointer"
             >
               Batal
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

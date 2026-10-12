@@ -1,10 +1,10 @@
 import { Recipe } from '../types';
 
-export const RECIPES_DATABASE: Recipe[] = [
+export const INITIAL_RECIPES: Recipe[] = [
   {
-    id: 'recipe-bolognese',
-    title: 'Spaghetti Bolognese Daging Sapi Kilat',
-    description: 'Paduan saus Prego kental dengan daging sapi cincang gurih, dimasak cepat dengan aroma tumisan bawang bombay segar.',
+    id: 'recipe-spaghetti-bolognese',
+    title: 'Spaghetti Bolognese Daging Sapi Saus Prego',
+    description: 'Pasta lembut al dente dengan siraman saus daging sapi cincang gurih bumbu bawang bombay harum khas Italia.',
     matchPercentage: 98,
     prepTimeMinutes: 5,
     cookTimeMinutes: 15,
@@ -13,10 +13,10 @@ export const RECIPES_DATABASE: Recipe[] = [
     estimatedCost: 'Rp 28.000 / porsi',
     calories: 490,
     servings: 2,
-    urgencyMessage: 'Memakai daging cincang & saus Prego agar tidak terbuang.',
+    urgencyMessage: 'Menggunakan pasta spaghetti, saus Prego, dan daging cincang sebelum batas simpan.',
     ingredients: [
-      { name: 'Daging sapi cincang', amount: '250-300 gr', isOwned: true, urgentPriority: true },
-      { name: 'Pasta spaghetti', amount: '180 gr', isOwned: true },
+      { name: 'Pasta spaghetti', amount: '200 gr', isOwned: true },
+      { name: 'Daging sapi cincang', amount: '250 gr', isOwned: true, urgentPriority: true },
       { name: 'Saus pasta Prego', amount: '1/2 kaleng (200 ml)', isOwned: true },
       { name: 'Bawang bombay cincang', amount: '1/2 butir', isOwned: true },
       { name: 'Bawang putih cincang', amount: '2 siung', isOwned: true },
@@ -27,32 +27,38 @@ export const RECIPES_DATABASE: Recipe[] = [
     steps: [
       {
         step: 1,
-        instruction: 'Didihkan air berlimpah dengan 1 sdt garam. Masukkan pasta spaghetti dan rebus selama 8-9 menit hingga al dente. Tiriskan dan simpan 3 sdm air rebusan pasta.',
+        instruction: 'Perebusan Pasta Al Dente: Didihkan air berlimpah di panci dengan 1 sdt garam. Masukkan pasta spaghetti dan rebus selama 8-9 menit hingga al dente. Tiriskan dan simpan 3 sdm air rebusan pasta.',
         durationMinutes: 8,
         tip: 'Air rebusan pasta yang bertepung akan membantu saus menempel sempurna pada mie spaghetti.'
       },
       {
         step: 2,
-        instruction: 'Panaskan wajan dengan sedikit minyak atau mentega. Tumis bawang bombay dan bawang putih cincang hingga harum layu dan keemasan.',
+        instruction: 'Penumisan Bumbu Aromatik: Panaskan wajan dengan 2 sdm mentega atau minyak goreng di atas api sedang. Masukkan bawang bombay dan bawang putih cincang, tumis hingga harum layu dan berwarna keemasan.',
         durationMinutes: 3,
-        tip: 'Gunakan api sedang agar bawang tidak lekas gosong.'
+        tip: 'Gunakan api sedang agar bawang matang merata tanpa gosong.'
       },
       {
         step: 3,
-        instruction: 'Masukkan daging sapi cincang. Aduk cepat dan tekan-tekan agar tidak menggumpal, masak sampai daging berubah warna kecokelatan merata.',
+        instruction: 'Pematangan Daging Cincang: Masukkan daging sapi cincang ke dalam wajan. Aduk cepat sambil ditekan-tekan agar butiran daging terpisah merata. Masak hingga daging berubah warna kecokelatan.',
         durationMinutes: 4,
-        tip: 'Keluarkan daging dari kulkas 5 menit sebelum dimasak agar suhunya tidak terlalu dingin di wajan.'
+        tip: 'Keluarkan daging dari kulkas 5 menit sebelum dimasak agar suhunya tidak terlalu dingin saat masuk ke wajan.'
       },
       {
         step: 4,
-        instruction: 'Tuang saus pasta Prego dan masukkan 3 sdm air rebusan pasta. Tambahkan sejumput gula, garam, dan lada bubuk sesuai selera. Aduk rata dan masak mendidih kecil selama 3 menit.',
-        durationMinutes: 3,
-        tip: 'Jika suka pedas sesuai selera Anda, tambahkan irisan cabai rawit atau cabai bubuk di tahap ini.'
+        instruction: 'Penggabungan Saus & Seasoning: Tuang saus pasta Prego dan 3 sdm air rebusan pasta ke dalam wajan. Bumbui dengan sejumput garam, gula pasir, dan lada hitam bubuk.',
+        durationMinutes: 2,
+        tip: 'Jika menyukai sensasi pedas, tambahkan irisan cabai rawit atau cabai bubuk di tahap ini.'
       },
       {
         step: 5,
-        instruction: 'Tata spaghetti di atas piring saji, siram saus bolognese daging melimpah di atasnya. Siap disajikan selagi hangat!',
-        durationMinutes: 2
+        instruction: 'Reduksi & Pematangan Saus: Kecilkan api sedikit, aduk perlahan dan biarkan saus mendidih kecil selama 3 menit hingga kuah mengental dan bumbu meresap ke dalam daging.',
+        durationMinutes: 3,
+        tip: 'Aduk sesekali agar bagian dasar saus tidak berkerak.'
+      },
+      {
+        step: 6,
+        instruction: 'Penyajian & Sentuhan Akhir: Tata pasta spaghetti di piring saji, tuangkan saus bolognese daging melimpah di atasnya. Taburkan keju parut atau oregano bila suka, sajikan selagi panas.',
+        durationMinutes: 1
       }
     ],
     nutrition: {
@@ -89,30 +95,36 @@ export const RECIPES_DATABASE: Recipe[] = [
     steps: [
       {
         step: 1,
-        instruction: 'Iris tipis daging sapi berlawanan arah serat agar teksturnya empuk saat ditumis cepat. Lumuri daging dengan 1 sdm kecap manis dan sejumput merica selama 5 menit.',
+        instruction: 'Persiapan & Marinasi Kilat: Iris tipis daging sapi berlawanan arah serat agar cepat empuk. Lumuri daging dengan 1 sdm kecap manis dan sejumput merica selama 5 menit.',
         durationMinutes: 5,
         tip: 'Memotong berlawanan serat membuat daging empuk tanpa perlu direbus berjam-jam.'
       },
       {
         step: 2,
-        instruction: 'Panaskan wajan dengan api besar, masukkan irisan bawang merah, bawang putih, dan cabai rawit. Tumis hingga harum dan layu.',
+        instruction: 'Pemotongan Sayuran: Cuci bersih buncis dan wortel, lalu potong serong dengan ukuran seragam agar tingkat kematangannya pas bersamaan.',
         durationMinutes: 2
       },
       {
         step: 3,
-        instruction: 'Masukkan irisan daging sapi. Besarkan api dan aduk cepat selama 3-4 menit sampai daging berubah warna dan keluar aroma harum gurihnya.',
-        durationMinutes: 4,
-        tip: 'Jangan menumis terlalu lama agar daging tetap juicy.'
+        instruction: 'Penumisan Bumbu Iris: Panaskan 2 sdm minyak di wajan dengan api sedang-tinggi. Masukkan irisan bawang merah, bawang putih, dan cabai rawit, tumis hingga harum layu.',
+        durationMinutes: 2,
+        tip: 'Gunakan api yang cukup panas agar bumbu mengeluarkan aroma smokey harum.'
       },
       {
         step: 4,
-        instruction: 'Masukkan sayuran wortel dan buncis. Beri saus tiram, sisa kecap manis, garam, dan 3 sdm air matang. Tumis sebentar sampai sayur matang renyah.',
-        durationMinutes: 3,
-        tip: 'Jaga sayuran tetap berwarna hijau cerah dan bertekstur krispi.'
+        instruction: 'Pematangan Daging Api Besar: Masukkan irisan daging sapi ke dalam wajan. Besarkan api dan aduk cepat selama 3-4 menit sampai daging berubah warna kecokelatan merata.',
+        durationMinutes: 4,
+        tip: 'Jangan menumis terlalu lama agar tekstur daging tetap empuk dan juicy.'
       },
       {
         step: 5,
-        instruction: 'Koreksi rasa gurih pedas manisnya. Angkat dan sajikan hangat bersama nasi putih pulen atau pasta.',
+        instruction: 'Pemasukan Sayur & Pembumbuan: Masukkan irisan wortel dan buncis. Tambahkan saus tiram, sisa kecap manis, garam, dan 3 sdm air matang. Tumis cepat 2-3 menit hingga sayur matang renyah.',
+        durationMinutes: 3,
+        tip: 'Jaga sayuran tetap berwarna cerah dan segar dengan tidak menutup wajan terlalu lama.'
+      },
+      {
+        step: 6,
+        instruction: 'Koreksi Rasa & Penyajian: Cicipi keseimbangan rasa gurih pedas manisnya. Angkat dari wajan dan sajikan selagi panas mengepul bersama nasi putih pulen.',
         durationMinutes: 1
       }
     ],
@@ -150,24 +162,35 @@ export const RECIPES_DATABASE: Recipe[] = [
     steps: [
       {
         step: 1,
-        instruction: 'Potong daging sapi ukuran dadu 1.5 cm agar cepat empuk. Rebus dalam 1 liter air mendidih bersama bawang putih geprek dengan api sedang.',
-        durationMinutes: 12,
-        tip: 'Buang buih busa yang mengapung di permukaan panci agar kuah sup tetap jernih berkilau.'
-      },
-      {
-        step: 2,
-        instruction: 'Masukkan wortel terlebih dahulu, rebus selama 4 menit hingga setengah empuk.',
-        durationMinutes: 4
-      },
-      {
-        step: 3,
-        instruction: 'Tambahkan buncis, garam, lada bubuk, sedikit pala bubuk, dan kaldu sapi. Masak hingga sayuran empuk pas.',
+        instruction: 'Pemotongan Dadu Daging: Potong daging sapi ukuran dadu 1.5 cm agar cepat empuk dan mudah disantap.',
         durationMinutes: 3
       },
       {
+        step: 2,
+        instruction: 'Perebusan Daging & Bumbu: Didihkan 1 liter air di panci, masukkan potongan daging bersama 4 siung bawang putih geprek dengan api sedang.',
+        durationMinutes: 10,
+        tip: 'Rebus bersama bawang putih geprek dari awal agar aroma kaldu daging menjadi harum dan sedap.'
+      },
+      {
+        step: 3,
+        instruction: 'Pembersihan Buih Kaldu: Ambil sendok sayur dan buang buih kotoran yang mengapung di permukaan air rebusan secara bertahap.',
+        durationMinutes: 2,
+        tip: 'Membuang buih busa adalah kunci utama agar kuah sup tetap jernih dan bening berkilau.'
+      },
+      {
         step: 4,
-        instruction: 'Matikan api, masukkan irisan daun bawang, seledri, dan taburan cabai rawit iris bagi yang suka pedas segar. Sajikan hangat.',
-        durationMinutes: 2
+        instruction: 'Pemasukan Wortel & Rempah: Masukkan potongan wortel ke dalam panci. Tambahkan garam, merica bubuk, sedikit pala bubuk, dan kaldu penyedap. Rebus 4 menit hingga wortel setengah matang.',
+        durationMinutes: 4
+      },
+      {
+        step: 5,
+        instruction: 'Pemasukan Buncis: Masukkan potongan buncis, masak sebentar selama 2-3 menit sampai buncis berubah hijau cerah dan empuk pas.',
+        durationMinutes: 3
+      },
+      {
+        step: 6,
+        instruction: 'Penyajian Taburan Segar: Matikan api kompor. Masukkan irisan daun bawang dan seledri segar. Tuang ke mangkuk saji hangat dan taburi bawang goreng renyah.',
+        durationMinutes: 1
       }
     ],
     nutrition: {
@@ -203,23 +226,33 @@ export const RECIPES_DATABASE: Recipe[] = [
     steps: [
       {
         step: 1,
-        instruction: 'Rebus pasta spaghetti dalam air mendidih bergaram selama 8 menit sampai al dente. Tiriskan.',
+        instruction: 'Perebusan Pasta Al Dente: Rebus pasta spaghetti dalam air mendidih bergaram selama 8 menit sampai al dente. Tiriskan dan tetesi sedikit minyak agar tidak lengket.',
         durationMinutes: 8
       },
       {
         step: 2,
-        instruction: 'Di wajan datar, panaskan minyak dan tumis bawang putih serta cabai dengan api kecil sampai wangi dan kekuningan.',
-        durationMinutes: 2,
-        tip: 'Jangan gunakan api besar agar bawang putih tidak pahit.'
+        instruction: 'Penyiapan Bawang & Cabai: Cincang halus 5 siung bawang putih dan iris serong cabai rawit merah segar.',
+        durationMinutes: 2
       },
       {
         step: 3,
-        instruction: 'Masukkan daging cincang, tumis hingga matang kecokelatan dan renyah. Bumbui dengan garam dan kaldu bubuk.',
-        durationMinutes: 4
+        instruction: 'Penumisan Minyak Aromatik: Panaskan 3 sdm minyak di wajan datar. Masukkan bawang putih dan cabai rawit dengan api kecil hingga harum dan berwarna kuning keemasan.',
+        durationMinutes: 2,
+        tip: 'Gunakan api kecil agar bawang putih tidak cepat gosong dan tidak terasa pahit.'
       },
       {
         step: 4,
-        instruction: 'Masukkan pasta spaghetti yang sudah ditiriskan. Aduk rata di atas wajan dengan api sedang selama 1 menit hingga tercampur sempurna.',
+        instruction: 'Pematangan Daging Cincang: Naikkan api ke sedang, masukkan daging cincang. Tumis cepat hingga daging berubah kecokelatan dan renyah. Bumbui dengan garam dan kaldu bubuk.',
+        durationMinutes: 4
+      },
+      {
+        step: 5,
+        instruction: 'Penyatuan Pasta & Daging: Masukkan spaghetti yang sudah ditiriskan ke dalam wajan. Aduk cepat di atas api sedang selama 1-2 menit agar seluruh untaian pasta terlumuri minyak gurih.',
+        durationMinutes: 2
+      },
+      {
+        step: 6,
+        instruction: 'Penyajian Hangat: Koreksi rasa gurih pedasnya, angkat dan sajikan segera di piring selagi hangat.',
         durationMinutes: 1
       }
     ],
@@ -258,25 +291,36 @@ export const RECIPES_DATABASE: Recipe[] = [
     steps: [
       {
         step: 1,
-        instruction: 'Panaskan 1 sdm minyak di wajan, masukkan telur lalu orak-arik hingga matang berbulir. Angkat dan sisihkan.',
+        instruction: 'Pengolahan Telur Orak-Arik: Panaskan 1 sdm minyak di wajan, masukkan telur ayam lalu orak-arik cepat dengan spatula hingga matang berbulir. Angkat dan sisihkan ke piring.',
         durationMinutes: 2,
-        tip: 'Gunakan api besar agar telur orak-arik beraroma smoky khas resto.'
+        tip: 'Gunakan api besar agar telur orak-arik beraroma gurih harum khas restoran.'
       },
       {
         step: 2,
-        instruction: 'Tambahkan sisa minyak, tumis irisan bawang merah, bawang putih, dan cabai rawit hingga harum semerbak.',
+        instruction: 'Penumisan Bumbu Iris: Tambahkan sisa minyak ke wajan yang sama. Masukkan irisan bawang merah, bawang putih, dan cabai rawit. Tumis hingga harum semerbak.',
         durationMinutes: 2
       },
       {
         step: 3,
-        instruction: 'Masukkan daging sapi iris, tumis cepat selama 3 menit sampai matang kecokelatan dan sarinya keluar.',
+        instruction: 'Pematangan Daging Sapi: Masukkan irisan daging sapi ke dalam bumbu tumis. Aduk cepat di atas api sedang-tinggi selama 3 menit sampai daging matang dan sarinya keluar.',
         durationMinutes: 3,
-        tip: 'Tumis daging dengan api sedang-tinggi agar sari daging meresap ke bumbu tumis.'
+        tip: 'Tumis daging dengan api agak besar agar sarinya langsung mengunci rasa di wajan.'
       },
       {
         step: 4,
-        instruction: 'Masukkan nasi dingin dan telur orak-arik. Bumbui dengan kecap manis, saus tiram, garam, dan lada. Aduk cepat di atas api besar sampai nasi berbulir rata dan bumbu meresap sempurna.',
-        durationMinutes: 3
+        instruction: 'Pemasukan Nasi & Telur: Masukkan nasi putih dingin dan telur orak-arik ke dalam wajan. Tekan-tekan bulir nasi agar tidak menggumpal.',
+        durationMinutes: 2
+      },
+      {
+        step: 5,
+        instruction: 'Pembumbuan & Pengadukan Api Besar: Tuangkan kecap manis, saus tiram, garam, dan lada. Aduk cepat di atas api besar selama 2 menit hingga seluruh bulir nasi terlapisi bumbu rata dan berasap harum.',
+        durationMinutes: 2,
+        tip: 'Teknik mengaduk di atas api besar (wok hei) memberikan aroma sedap pada nasi goreng.'
+      },
+      {
+        step: 6,
+        instruction: 'Penyajian Nasi Goreng Hangat: Koreksi rasa, matikan api, dan tata nasi goreng di piring saji. Sajikan dengan irisan timun atau kerupuk.',
+        durationMinutes: 1
       }
     ],
     nutrition: {
@@ -314,24 +358,34 @@ export const RECIPES_DATABASE: Recipe[] = [
     steps: [
       {
         step: 1,
-        instruction: 'Panaskan minyak, tumis bawang putih cincang dan irisan bawang bombay bersama sedikit pala bubuk sampai wangi semerbak.',
+        instruction: 'Penumisan Bumbu Rempah Semur: Panaskan minyak di wajan, tumis bawang putih cincang, irisan bawang bombay, dan sedikit pala bubuk hingga wangi semerbak.',
         durationMinutes: 3,
-        tip: 'Menumis pala bubuk bersama bawang di awal membuat aroma semur lebih wangi dan menggugah selera.'
+        tip: 'Menumis pala bubuk bersama bawang di awal membuat aroma semur lebih harum dan menggugah selera.'
       },
       {
         step: 2,
-        instruction: 'Masukkan irisan daging sapi, aduk rata sampai daging berubah warna menjadi kecokelatan.',
+        instruction: 'Pematangan Daging Sapi: Masukkan irisan daging sapi, aduk rata sampai daging berubah warna menjadi kecokelatan merata.',
         durationMinutes: 4
       },
       {
         step: 3,
-        instruction: 'Tuang kecap manis, saus tiram, lada, dan air kaldu. Masukkan potongan wortel. Masak dengan api sedang selama 12 menit hingga wortel empuk dan kuah mengental gurih.',
-        durationMinutes: 12,
-        tip: 'Tutup wajan agar uap panas mematangkan daging dan wortel lebih cepat tanpa kuah cepat surut.'
+        instruction: 'Penambahan Kuah & Bumbu: Tuangkan kecap manis kental, saus tiram, merica putih bubuk, dan 350 ml air matang atau kaldu.',
+        durationMinutes: 2
       },
       {
         step: 4,
-        instruction: 'Koreksi rasa manis gurihnya dengan sejumput garam. Angkat dan sajikan kuah semur hangat berpadu nasi putih.',
+        instruction: 'Pemasukan Wortel & Penutupan Wajan: Masukkan potongan wortel manis. Tutup wajan dan masak dengan api sedang selama 8 menit agar uap panas mematangkan daging dan wortel bersamaan.',
+        durationMinutes: 8,
+        tip: 'Menutup wajan membuat wortel cepat empuk tanpa membuat kuah cepat menyusut kering.'
+      },
+      {
+        step: 5,
+        instruction: 'Reduksi Kuah Semur Kental: Buka tutup wajan, masak sebentar selama 2 menit hingga kuah sedikit menyusut kental dan mengilap.',
+        durationMinutes: 2
+      },
+      {
+        step: 6,
+        instruction: 'Penyajian Kuah Semur Hangat: Koreksi rasa manis gurihnya dengan sejumput garam. Angkat dan sajikan kuah semur hangat bersama nasi putih.',
         durationMinutes: 1
       }
     ],
@@ -345,3 +399,5 @@ export const RECIPES_DATABASE: Recipe[] = [
     theme: 'stew'
   }
 ];
+
+export const RECIPES_DATABASE: Recipe[] = INITIAL_RECIPES;

@@ -34,11 +34,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [userListVersion, setUserListVersion] = useState(0);
+  const [allUsers, setAllUsers] = useState<User[]>(() => db.getUsers());
   const [accountToDelete, setAccountToDelete] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
+      db.syncWithServer().then(users => setAllUsers(users));
+      const unsubscribe = db.subscribeUsers(users => setAllUsers(users));
+
       const users = db.getUsers();
       if (users.length === 0) {
         setMode('register');
@@ -49,6 +52,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       }
       setError(null);
       setSuccess(null);
+
+      return unsubscribe;
     }
   }, [isOpen, initialMode, currentUser]);
 
@@ -63,7 +68,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (!accountToDelete) return;
     const { id, name: targetName } = accountToDelete;
     db.deleteUser(id);
-    setUserListVersion(v => v + 1);
+    setAllUsers(db.getUsers());
     setAccountToDelete(null);
     setError(null);
     setSuccess(`Akun "${targetName}" berhasil dihapus.`);
@@ -72,8 +77,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       window.location.reload();
     }
   };
-
-  const allUsers = db.getUsers();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

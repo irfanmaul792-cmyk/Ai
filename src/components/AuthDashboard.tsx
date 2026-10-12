@@ -15,11 +15,8 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
   onLoginSuccess,
   initialMode = 'login',
 }) => {
-  const usersOnDevice = db.getUsers();
-  const [mode, setMode] = useState<'login' | 'register' | 'switch'>(() => {
-    if (usersOnDevice.length === 0) return 'register';
-    return initialMode === 'register' ? 'register' : 'login';
-  });
+  const [allUsers, setAllUsers] = useState<User[]>(() => db.getUsers());
+  const [mode, setMode] = useState<'login' | 'register' | 'switch'>(() => initialMode);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,10 +27,20 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [usersVersion, setUsersVersion] = useState(0);
   const [accountToDelete, setAccountToDelete] = useState<{ id: string; name: string } | null>(null);
 
-  const allUsers = db.getUsers();
+  // Sync with central server on mount to pull accounts registered on other devices/web
+  React.useEffect(() => {
+    db.syncWithServer().then(users => {
+      setAllUsers(users);
+    });
+
+    const unsubscribe = db.subscribeUsers(users => {
+      setAllUsers(users);
+    });
+
+    return unsubscribe;
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,7 +144,7 @@ export const AuthDashboard: React.FC<AuthDashboardProps> = ({
     if (!accountToDelete) return;
     const { id, name: targetName } = accountToDelete;
     db.deleteUser(id);
-    setUsersVersion(v => v + 1);
+    setAllUsers(db.getUsers());
     setAccountToDelete(null);
     setError(null);
     setSuccess(`Akun "${targetName}" berhasil dihapus dari perangkat.`);
