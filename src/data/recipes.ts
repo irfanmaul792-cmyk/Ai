@@ -41,7 +41,7 @@ export const INITIAL_RECIPES: Recipe[] = [
         step: 3,
         instruction: 'Pematangan Daging Cincang: Masukkan daging sapi cincang ke dalam wajan. Aduk cepat sambil ditekan-tekan agar butiran daging terpisah merata. Masak hingga daging berubah warna kecokelatan.',
         durationMinutes: 4,
-        tip: 'Keluarkan daging dari kulkas 5 menit sebelum dimasak agar suhunya tidak terlalu dingin saat masuk ke wajan.'
+        tip: 'Keluarkan daging dari kulkas 5 menit sebelum dimasak agar tidak terlalu dingin saat masuk ke wajan.'
       },
       {
         step: 4,

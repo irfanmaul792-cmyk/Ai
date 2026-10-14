@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Ingredient, IngredientShelf, IngredientCategory, User } from '../types';
 import { resolveIngredientIcon, resolveIngredientCategory } from '../utils/ingredientVisuals';
 import {
-  Thermometer,
   Zap,
   Plus,
   Trash2,
@@ -155,14 +154,14 @@ export const SmartFridgeModel: React.FC<SmartFridgeModelProps> = ({
         {/* Digital display & actions */}
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="bg-stone-950/80 border border-stone-800 px-3 py-2 rounded-xl flex items-center gap-2.5 text-xs font-mono">
-            <div className="flex items-center gap-1.5 text-cyan-400">
-              <Thermometer className="w-3.5 h-3.5" />
-              <span>Chiller 3°C</span>
+            <div className="flex items-center gap-1.5 text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Kulkas Aktif</span>
             </div>
             <div className="h-3 w-px bg-stone-800" />
-            <div className="flex items-center gap-1.5 text-blue-400">
-              <Zap className="w-3.5 h-3.5" />
-              <span>Freezer -18°C</span>
+            <div className="flex items-center gap-1.5 text-stone-300">
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <span>{ingredients.length} Bahan</span>
             </div>
           </div>
 
@@ -445,7 +444,6 @@ export const SmartFridgeModel: React.FC<SmartFridgeModelProps> = ({
                       <div className="flex items-center justify-between mb-3 text-xs">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-rose-300">🥩 Rak Daging & Protein Dingin</span>
-                          <span className="text-[10px] text-rose-400 font-mono">Suhu: 1°C</span>
                         </div>
                         <span className="text-stone-400 text-[11px]">{meatItems.length} bahan</span>
                       </div>
@@ -535,7 +533,6 @@ export const SmartFridgeModel: React.FC<SmartFridgeModelProps> = ({
                       <div className="flex items-center justify-between mb-3 text-xs">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-amber-300">🥫 Rak Atas — Saus, Keju & Bumbu Olahan</span>
-                          <span className="text-[10px] text-amber-400 font-mono">Suhu: 4°C</span>
                         </div>
                         <span className="text-stone-400 text-[11px]">{chillerItems.length} bahan</span>
                       </div>
@@ -580,7 +577,6 @@ export const SmartFridgeModel: React.FC<SmartFridgeModelProps> = ({
                       <div className="flex items-center justify-between mb-3 text-xs">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-blue-300">❄️ Freezer Kompartemen Bawah</span>
-                          <span className="text-[10px] text-blue-400 font-mono">Suhu: -18°C</span>
                         </div>
                         <span className="text-stone-400 text-[11px]">{freezerItems.length} bahan</span>
                       </div>

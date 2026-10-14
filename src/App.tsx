@@ -1546,7 +1546,7 @@ export default function App() {
               <div className="bg-emerald-900/60 p-4 rounded-2xl border border-emerald-800">
                 <span className="text-xs font-bold text-amber-300 block">🥩 Rak Daging</span>
                 <span className="text-[11px] text-emerald-200 mt-1 block">
-                  Daging segar di chiller sebaiknya dimasak dalam 1-2 hari. Jika belum sempat, pindahkan ke Freezer -18°C.
+                  Daging segar di chiller sebaiknya dimasak dalam 1-2 hari. Jika belum sempat, pindahkan ke Freezer.
                 </span>
               </div>
               <div className="bg-emerald-900/60 p-4 rounded-2xl border border-emerald-800">

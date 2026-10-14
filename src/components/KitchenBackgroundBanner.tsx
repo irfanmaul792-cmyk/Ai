@@ -93,7 +93,7 @@ export const KitchenBackgroundBanner: React.FC<KitchenBackgroundBannerProps> = (
             <circle cx="44" cy="58" r="3" fill="#38bdf8" />
             <line x1="52" y1="58" x2="115" y2="58" stroke="#38bdf8" strokeWidth="2" />
             <line x1="44" y1="72" x2="100" y2="72" stroke="#4ade80" strokeWidth="2" />
-            <text x="35" y="85" fontFamily="monospace" fontSize="8" fill="#94a3b8">3°C | ECO ACTIVE</text>
+            <text x="35" y="85" fontFamily="monospace" fontSize="8" fill="#94a3b8">SMART | ECO ACTIVE</text>
 
             {/* Water & Crushed Ice Dispenser Nook */}
             <rect x="42" y="104" width="77" height="50" rx="4" fill="#1e293b" />
