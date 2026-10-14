@@ -158,7 +158,7 @@ class DatabaseService {
         }
       });
 
-      // 1. Bidirectional sync with central server
+      // 1. Bidirectional sync with central server (preserves device privacy)
       try {
         const syncResp = await fetch('/api/auth/sync-all', {
           method: 'POST',
@@ -172,29 +172,32 @@ class DatabaseService {
 
         if (syncResp.ok) {
           const syncData = await syncResp.json();
-          if (Array.isArray(syncData.users)) {
-            const userMap = new Map<string, User>();
-            localUsers.forEach(u => userMap.set(u.id, u));
-            syncData.users.forEach((u: User) => userMap.set(u.id, u));
-            const merged = Array.from(userMap.values());
-            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged));
-            this.notifyUsersListeners(merged);
+          if (Array.isArray(syncData.users) && localUsers.length > 0) {
+            // Only refresh metadata for accounts already authorized on this specific device
+            const updated = localUsers.map(localUser => {
+              const serverMatch = syncData.users.find((su: User) => su.id === localUser.id);
+              return serverMatch ? { ...localUser, ...serverMatch } : localUser;
+            });
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updated));
+            this.notifyUsersListeners(updated);
           }
         }
       } catch (syncErr) {
-        // Fallback: standard users GET if sync-all unavailable
-        const res = await fetch('/api/auth/users');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data.users)) {
-            const userMap = new Map<string, User>();
-            localUsers.forEach(u => userMap.set(u.id, u));
-            data.users.forEach((u: User) => userMap.set(u.id, u));
-            const merged = Array.from(userMap.values());
-            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(merged));
-            this.notifyUsersListeners(merged);
+        // Fallback: update only accounts already on this device
+        try {
+          const res = await fetch('/api/auth/users');
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.users) && localUsers.length > 0) {
+              const updated = localUsers.map(localUser => {
+                const serverMatch = data.users.find((su: User) => su.id === localUser.id);
+                return serverMatch ? { ...localUser, ...serverMatch } : localUser;
+              });
+              localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updated));
+              this.notifyUsersListeners(updated);
+            }
           }
-        }
+        } catch {}
       }
 
       // 2. Sync active user data from server if available
