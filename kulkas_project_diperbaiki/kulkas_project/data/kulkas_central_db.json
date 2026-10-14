@@ -1,0 +1,32 @@
+{
+  "users": [
+    {
+      "id": "user_1791812227123_x3198",
+      "name": "irfan",
+      "email": "irfan",
+      "avatar": "👨‍🍳",
+      "createdAt": 1791812227123,
+      "lastLoginAt": 1791812572856
+    }
+  ],
+  "passwords": {
+    "user_1791812227123_x3198": "52b460ebf051833dd95ace66190bfb36c097a5e3a4e2bb07655254450acb2048"
+  },
+  "userData": {
+    "user_1791812227123_x3198": {
+      "userId": "user_1791812227123_x3198",
+      "ingredients": [],
+      "selectedFridgeIds": {},
+      "shoppingItems": [],
+      "favoriteRecipes": [],
+      "filters": {
+        "budget": "Bebas",
+        "cookingTime": "Maks. 30 menit",
+        "servings": "2",
+        "preferences": "suka pedas"
+      },
+      "photos": [],
+      "updatedAt": 1791812228065
+    }
+  }
+}

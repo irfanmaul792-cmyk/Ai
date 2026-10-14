@@ -1,0 +1,7 @@
+{
+  "name": "Isi Kulkas Jadi Menu Hari Ini",
+  "description": "Aplikasi pintar pendeteksi isi kulkas dan rekomendasi resep masakan lezat otomatis berdasarkan foto dapur, budget, dan waktu memasak.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
